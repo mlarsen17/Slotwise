@@ -8,178 +8,178 @@ Below is a detailed implementation checklist designed for an AI agent to execute
 
 ### Feature 1.1 — Repository and project scaffolding
 
-* [ ] Create the top-level repository structure
+* [x] Create the top-level repository structure
 
-  * [ ] Create `medscheduler_wrapper/`
-  * [ ] Create `pipeline/`
-  * [ ] Create `pipeline/stages/`
-  * [ ] Create `sql/`
-  * [ ] Create `models/`
-  * [ ] Create `optimizer/`
-  * [ ] Create `app/`
-  * [ ] Create `config/`
-  * [ ] Create `data/`
-  * [ ] Create `tests/`
-* [ ] Create Python packaging and environment files
+  * [x] Create `medscheduler_wrapper/`
+  * [x] Create `pipeline/`
+  * [x] Create `pipeline/stages/`
+  * [x] Create `sql/`
+  * [x] Create `models/`
+  * [x] Create `optimizer/`
+  * [x] Create `app/`
+  * [x] Create `config/`
+  * [x] Create `data/`
+  * [x] Create `tests/`
+* [x] Create Python packaging and environment files
 
-  * [ ] Add `pyproject.toml` or `requirements.txt`
-  * [ ] Add `.python-version` if needed
-  * [ ] Add `.gitignore`
-  * [ ] Add `README.md`
-* [ ] Define core dependency set
+  * [x] Add `pyproject.toml` or `requirements.txt`
+  * [x] Add `.python-version` if needed
+  * [x] Add `.gitignore`
+  * [x] Add `README.md`
+* [x] Define core dependency set
 
-  * [ ] Add `duckdb`
-  * [ ] Add `pandas`
-  * [ ] Add `pyyaml`
-  * [ ] Add `pydantic`
-  * [ ] Add `streamlit`
-  * [ ] Add `scikit-learn`
-  * [ ] Add `pytest`
-* [ ] Establish coding conventions
+  * [x] Add `duckdb`
+  * [x] Add `pandas`
+  * [x] Add `pyyaml`
+  * [x] Add `pydantic`
+  * [x] Add `streamlit`
+  * [x] Add `scikit-learn`
+  * [x] Add `pytest`
+* [x] Establish coding conventions
 
-  * [ ] Choose formatting tool
-  * [ ] Choose linting tool
-  * [ ] Decide logging format
-  * [ ] Decide config loading pattern
+  * [x] Choose formatting tool
+  * [x] Choose linting tool
+  * [x] Decide logging format
+  * [x] Decide config loading pattern
 
 ### Feature 1.2 — Core configuration and run model
 
-* [ ] Create a default config file for the MVP
+* [x] Create a default config file for the MVP
 
-  * [ ] Add DuckDB path
-  * [ ] Add scenario identifiers
-  * [ ] Add random seed
-  * [ ] Add effective timestamp for deterministic runs
-  * [ ] Add action ladder configuration
-  * [ ] Add lead-time windows
-  * [ ] Add global discount limits
-* [ ] Define a deterministic run identity model
+  * [x] Add DuckDB path
+  * [x] Add scenario identifiers
+  * [x] Add random seed
+  * [x] Add effective timestamp for deterministic runs
+  * [x] Add action ladder configuration
+  * [x] Add lead-time windows
+  * [x] Add global discount limits
+* [x] Define a deterministic run identity model
 
-  * [ ] Create `run_id` format
-  * [ ] Create `scenario_id` format
-  * [ ] Create `feature_snapshot_version` format
-  * [ ] Create `model_version` format
-* [ ] Build shared config loader
+  * [x] Create `run_id` format
+  * [x] Create `scenario_id` format
+  * [x] Create `feature_snapshot_version` format
+  * [x] Create `model_version` format
+* [x] Build shared config loader
 
-  * [ ] Validate config schema on startup
-  * [ ] Fail fast on missing required fields
-  * [ ] Normalize paths and defaults
-  * [ ] Surface config values to logs at run start
+  * [x] Validate config schema on startup
+  * [x] Fail fast on missing required fields
+  * [x] Normalize paths and defaults
+  * [x] Surface config values to logs at run start
 
 ### Feature 1.3 — Medscheduler wrapper
 
 * [ ] Define the wrapper interface
 
-  * [ ] Create a scenario configuration class
-  * [ ] Create extract interface for slots
-  * [ ] Create extract interface for booking lifecycle events
-  * [ ] Create normalization interface for internal records
+  * [x] Create a scenario configuration class
+  * [x] Create extract interface for slots
+  * [x] Create extract interface for booking lifecycle events
+  * [x] Create normalization interface for internal records
 * [ ] Implement scenario setup support
 
-  * [ ] Represent businesses
-  * [ ] Represent providers
+  * [x] Represent businesses
+  * [x] Represent providers
   * [ ] Represent services
   * [ ] Represent locations
   * [ ] Represent customers
-  * [ ] Represent scenario knobs such as demand shifts and cancellation behavior
+  * [x] Represent scenario knobs such as demand shifts and cancellation behavior
 * [ ] Implement extraction logic
 
-  * [ ] Extract raw slot records from Medscheduler
-  * [ ] Extract booking lifecycle records from Medscheduler
-  * [ ] Preserve source IDs and timestamps
-  * [ ] Capture enough information to reconstruct bookable windows
+  * [x] Extract raw slot records from Medscheduler
+  * [x] Extract booking lifecycle records from Medscheduler
+  * [x] Preserve source IDs and timestamps
+  * [x] Capture enough information to reconstruct bookable windows
 * [ ] Implement normalization logic
 
-  * [ ] Map source slot records into internal slot schema
-  * [ ] Map source booking records into internal booking event schema
-  * [ ] Generate stable internal IDs
-  * [ ] Attach `source_system`, `source_run_id`, and `scenario_id`
+  * [x] Map source slot records into internal slot schema
+  * [x] Map source booking records into internal booking event schema
+  * [x] Generate stable internal IDs
+  * [x] Attach `source_system`, `source_run_id`, and `scenario_id`
 * [ ] Make extraction rerunnable
 
-  * [ ] Ensure extraction does not append duplicate raw records on rerun
-  * [ ] Ensure normalization produces the same internal IDs for the same source inputs
+  * [x] Ensure extraction does not append duplicate raw records on rerun
+  * [x] Ensure normalization produces the same internal IDs for the same source inputs
   * [ ] Add source-level integrity checks
 
 ### Feature 1.4 — DuckDB database initialization
 
 * [ ] Create database bootstrap module
 
-  * [ ] Open or create the DuckDB file
-  * [ ] Create required schemas or naming conventions
+  * [x] Open or create the DuckDB file
+  * [x] Create required schemas or naming conventions
   * [ ] Register initialization logs
 * [ ] Implement core table DDL
 
-  * [ ] Create `slots`
-  * [ ] Create `booking_events`
-  * [ ] Create `pricing_actions`
+  * [x] Create `slots`
+  * [x] Create `booking_events`
+  * [x] Create `pricing_actions`
 * [ ] Implement supporting table DDL
 
-  * [ ] Create `businesses`
-  * [ ] Create `providers`
-  * [ ] Create `feature_snapshots`
-  * [ ] Create `cohort_baselines`
-  * [ ] Create `optimizer_configs`
-  * [ ] Create `scoring_outputs`
-  * [ ] Create `evaluation_results`
+  * [x] Create `businesses`
+  * [x] Create `providers`
+  * [x] Create `feature_snapshots`
+  * [x] Create `cohort_baselines`
+  * [x] Create `optimizer_configs`
+  * [x] Create `scoring_outputs`
+  * [x] Create `evaluation_results`
 * [ ] Add indexes or optimization choices only if necessary for DuckDB MVP
 
-  * [ ] Avoid premature optimization
-  * [ ] Prefer materialized tables and views
+  * [x] Avoid premature optimization
+  * [x] Prefer materialized tables and views
 
 ### Feature 1.5 — Data loading pipeline
 
-* [ ] Implement raw-to-core load stage
+* [x] Implement raw-to-core load stage
 
-  * [ ] Load normalized businesses into DuckDB
-  * [ ] Load normalized providers into DuckDB
-  * [ ] Load normalized slots into DuckDB
-  * [ ] Load normalized booking events into DuckDB
-* [ ] Enforce idempotent writes
+  * [x] Load normalized businesses into DuckDB
+  * [x] Load normalized providers into DuckDB
+  * [x] Load normalized slots into DuckDB
+  * [x] Load normalized booking events into DuckDB
+* [x] Enforce idempotent writes
 
-  * [ ] Use replace-or-merge patterns
-  * [ ] Delete scoped records by `run_id` or `scenario_id` before insert where appropriate
-  * [ ] Ensure no duplicate primary keys
-* [ ] Add row-count validation
+  * [x] Use replace-or-merge patterns
+  * [x] Delete scoped records by `run_id` or `scenario_id` before insert where appropriate
+  * [x] Ensure no duplicate primary keys
+* [x] Add row-count validation
 
-  * [ ] Validate expected slot count
-  * [ ] Validate expected booking event count
-  * [ ] Validate required fields are populated
-  * [ ] Fail on nulls in mandatory keys
+  * [x] Validate expected slot count
+  * [x] Validate expected booking event count
+  * [x] Validate required fields are populated
+  * [x] Fail on nulls in mandatory keys
 
 ### Feature 1.6 — Availability window logic
 
-* [ ] Implement canonical bookable window computation
+* [x] Implement canonical bookable window computation
 
-  * [ ] Derive `visible_at`
-  * [ ] Derive `unavailable_at`
-  * [ ] Ensure `unavailable_at` is the earliest of booked, removed, start, or expiration events
-* [ ] Validate bookable window correctness
+  * [x] Derive `visible_at`
+  * [x] Derive `unavailable_at`
+  * [x] Ensure `unavailable_at` is the earliest of booked, removed, start, or expiration events
+* [x] Validate bookable window correctness
 
-  * [ ] Verify `visible_at <= unavailable_at`
-  * [ ] Flag malformed slot histories
+  * [x] Verify `visible_at <= unavailable_at`
+  * [x] Flag malformed slot histories
   * [ ] Add tests for booked-before-start
   * [ ] Add tests for never-booked slots
   * [ ] Add tests for blocked or removed slots
-* [ ] Persist final slot status
+* [x] Persist final slot status
 
-  * [ ] Set `current_status`
-  * [ ] Set derived status if missing from source
+  * [x] Set `current_status`
+  * [x] Set derived status if missing from source
   * [ ] Document status enum assumptions
 
 ### Feature 1.7 — Phase 1 validation and exit criteria
 
-* [ ] Add tests for database bootstrap
-* [ ] Add tests for normalization determinism
-* [ ] Add tests for stable internal IDs
-* [ ] Add tests for idempotent loading
-* [ ] Add a sample end-to-end run on one scenario
+* [x] Add tests for database bootstrap
+* [x] Add tests for normalization determinism
+* [x] Add tests for stable internal IDs
+* [x] Add tests for idempotent loading
+* [x] Add a sample end-to-end run on one scenario
 * [ ] Verify the following before closing Phase 1
 
-  * [ ] DuckDB initializes cleanly
-  * [ ] Medscheduler wrapper extracts and normalizes data
-  * [ ] Core tables are populated
-  * [ ] Availability logic works
-  * [ ] Rerunning Phase 1 does not duplicate data
+  * [x] DuckDB initializes cleanly
+  * [x] Medscheduler wrapper extracts and normalizes data
+  * [x] Core tables are populated
+  * [x] Availability logic works
+  * [x] Rerunning Phase 1 does not duplicate data
 
 ---
 
@@ -376,7 +376,7 @@ Below is a detailed implementation checklist designed for an AI agent to execute
   * [ ] `model_version`
 * [ ] Persist scoring outputs
 
-  * [ ] Create `scoring_outputs`
+  * [x] Create `scoring_outputs`
   * [ ] Key by `internal_slot_id`, `run_id`, `feature_snapshot_version`
 
 ### Feature 3.2 — Pooled demand scoring model
