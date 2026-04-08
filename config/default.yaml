@@ -1,0 +1,17 @@
+duckdb_path: data/mvp.duckdb
+scenario_id: phase1_baseline
+source_run_id: synthetic_run_001
+random_seed: 42
+effective_ts: 2026-01-01T00:00:00Z
+action_ladder: [0, 5, 10, 15, 20]
+lead_time_windows_hours: [24, 72, 168]
+global_discount_limits:
+  min_pct: 0
+  max_pct: 20
+scenario:
+  business_count: 2
+  providers_per_business: 2
+  days: 7
+  slots_per_provider_per_day: 4
+  cancellation_rate: 0.1
+  removal_rate: 0.05
