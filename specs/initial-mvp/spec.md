@@ -68,51 +68,51 @@ Below is a detailed implementation checklist designed for an AI agent to execute
 
 ### Feature 1.3 — Medscheduler wrapper
 
-* [ ] Define the wrapper interface
+* [x] Define the wrapper interface
 
   * [x] Create a scenario configuration class
   * [x] Create extract interface for slots
   * [x] Create extract interface for booking lifecycle events
   * [x] Create normalization interface for internal records
-* [ ] Implement scenario setup support
+* [x] Implement scenario setup support
 
   * [x] Represent businesses
   * [x] Represent providers
-  * [ ] Represent services
-  * [ ] Represent locations
-  * [ ] Represent customers
+  * [x] Represent services
+  * [x] Represent locations
+  * [x] Represent customers
   * [x] Represent scenario knobs such as demand shifts and cancellation behavior
-* [ ] Implement extraction logic
+* [x] Implement extraction logic
 
   * [x] Extract raw slot records from Medscheduler
   * [x] Extract booking lifecycle records from Medscheduler
   * [x] Preserve source IDs and timestamps
   * [x] Capture enough information to reconstruct bookable windows
-* [ ] Implement normalization logic
+* [x] Implement normalization logic
 
   * [x] Map source slot records into internal slot schema
   * [x] Map source booking records into internal booking event schema
   * [x] Generate stable internal IDs
   * [x] Attach `source_system`, `source_run_id`, and `scenario_id`
-* [ ] Make extraction rerunnable
+* [x] Make extraction rerunnable
 
   * [x] Ensure extraction does not append duplicate raw records on rerun
   * [x] Ensure normalization produces the same internal IDs for the same source inputs
-  * [ ] Add source-level integrity checks
+  * [x] Add source-level integrity checks
 
 ### Feature 1.4 — DuckDB database initialization
 
-* [ ] Create database bootstrap module
+* [x] Create database bootstrap module
 
   * [x] Open or create the DuckDB file
   * [x] Create required schemas or naming conventions
-  * [ ] Register initialization logs
-* [ ] Implement core table DDL
+  * [x] Register initialization logs
+* [x] Implement core table DDL
 
   * [x] Create `slots`
   * [x] Create `booking_events`
   * [x] Create `pricing_actions`
-* [ ] Implement supporting table DDL
+* [x] Implement supporting table DDL
 
   * [x] Create `businesses`
   * [x] Create `providers`
@@ -121,7 +121,7 @@ Below is a detailed implementation checklist designed for an AI agent to execute
   * [x] Create `optimizer_configs`
   * [x] Create `scoring_outputs`
   * [x] Create `evaluation_results`
-* [ ] Add indexes or optimization choices only if necessary for DuckDB MVP
+* [x] Add indexes or optimization choices only if necessary for DuckDB MVP
 
   * [x] Avoid premature optimization
   * [x] Prefer materialized tables and views
@@ -157,14 +157,14 @@ Below is a detailed implementation checklist designed for an AI agent to execute
 
   * [x] Verify `visible_at <= unavailable_at`
   * [x] Flag malformed slot histories
-  * [ ] Add tests for booked-before-start
-  * [ ] Add tests for never-booked slots
-  * [ ] Add tests for blocked or removed slots
+  * [x] Add tests for booked-before-start
+  * [x] Add tests for never-booked slots
+  * [x] Add tests for blocked or removed slots
 * [x] Persist final slot status
 
   * [x] Set `current_status`
   * [x] Set derived status if missing from source
-  * [ ] Document status enum assumptions
+  * [x] Document status enum assumptions
 
 ### Feature 1.7 — Phase 1 validation and exit criteria
 
@@ -173,7 +173,7 @@ Below is a detailed implementation checklist designed for an AI agent to execute
 * [x] Add tests for stable internal IDs
 * [x] Add tests for idempotent loading
 * [x] Add a sample end-to-end run on one scenario
-* [ ] Verify the following before closing Phase 1
+* [x] Verify the following before closing Phase 1
 
   * [x] DuckDB initializes cleanly
   * [x] Medscheduler wrapper extracts and normalizes data
