@@ -11,6 +11,9 @@ global_discount_limits:
 scenario:
   business_count: 2
   providers_per_business: 2
+  services_per_business: 3
+  locations_per_business: 1
+  customers_per_business: 50
   days: 7
   slots_per_provider_per_day: 4
   cancellation_rate: 0.1

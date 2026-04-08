@@ -36,7 +36,8 @@ def apply_availability(conn: duckdb.DuckDBPyConnection, scenario_id: str) -> Non
     )
 
     bad_rows = conn.execute(
-        "SELECT COUNT(*) FROM slots WHERE scenario_id = ? AND visible_at > unavailable_at", [scenario_id]
+        "SELECT COUNT(*) FROM slots WHERE scenario_id = ? AND visible_at > unavailable_at",
+        [scenario_id],
     ).fetchone()[0]
     if bad_rows > 0:
         raise ValueError("Malformed slot histories: visible_at > unavailable_at")

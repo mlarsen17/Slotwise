@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, field_validator
 
 LOGGER = logging.getLogger(__name__)
 
@@ -20,6 +20,9 @@ class GlobalDiscountLimits(BaseModel):
 class ScenarioSettings(BaseModel):
     business_count: int = 2
     providers_per_business: int = 2
+    services_per_business: int = 3
+    locations_per_business: int = 1
+    customers_per_business: int = 50
     days: int = 7
     slots_per_provider_per_day: int = 4
     cancellation_rate: float = 0.1
