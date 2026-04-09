@@ -1,35 +1,85 @@
 # Slotwise MVP
 
-Phase 1 implementation for the demand-aware pricing engine MVP includes:
+Slotwise is a simulation-first MVP for a demand-aware pricing engine focused on underbooked appointment slots.
 
-- repository scaffolding for wrapper, pipeline, models, optimizer, app, config, data, tests
-- deterministic config loading and run identity model
-- synthetic Medscheduler wrapper extraction + normalization with stable IDs
-- DuckDB bootstrap for core/supporting tables
-- idempotent load stage for normalized entities
-- canonical availability window derivation (`visible_at`, `unavailable_at`, `current_status`)
-- phase-one tests for determinism, idempotency, bootstrap, and end-to-end run
+The current codebase implements the Phase 1 data foundation:
 
-## Slot status assumptions (MVP)
+- deterministic synthetic extraction via the Medscheduler wrapper
+- normalization into stable IDs and canonical entities
+- DuckDB schema bootstrap and compatibility migrations
+- idempotent loading for core tables scoped by `scenario_id` + `run_id`
+- availability derivation for each slot (`visible_at`, `unavailable_at`, `current_status`)
+- repeatable pipeline execution and regression tests
 
-The Phase 1 availability stage assumes the following status semantics:
+> Scope note: this repository currently prepares the analytical data model and slot availability state. Pricing recommendations and UI surfaces are scaffolded but not yet implemented.
 
-- `removed`: slot has a `removed` lifecycle event and is no longer bookable
-- `booked`: latest lifecycle event for the slot is `booked`
-- `canceled`: latest lifecycle event for the slot is `canceled` (slot may be reopened later in future phases)
-- `expired`: no lifecycle event overrides status and `slot_start_at` is in the past
-- `open`: no lifecycle event overrides status and `slot_start_at` is in the future
+## Repository layout
 
-`unavailable_at` is computed as the earliest of `booked`, `removed`, or `slot_start_at`.
+```text
+medscheduler_wrapper/   # synthetic source generation + normalization
+pipeline/               # config, DB bootstrap, stages, runner
+models/                 # placeholder for scoring/calibration models
+optimizer/              # placeholder for eligibility/recommendation logic
+app/                    # placeholder for Streamlit UI
+config/default.yaml     # default local run configuration
+tests/                  # phase-1 and availability behavior tests
+```
 
-## Run pipeline
+## Requirements
+
+- Python 3.11+
+- pip (or another PEP 517/518-capable installer)
+
+## Install
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev]
+```
+
+## Run the pipeline
+
+Default config:
 
 ```bash
 python -m pipeline.run_pipeline
 ```
 
-## Run tests
+With an explicit config path:
+
+```bash
+python -c "from pipeline.run_pipeline import run; run('path/to/config.yaml')"
+```
+
+Default outputs are written to `data/mvp.duckdb`.
+
+## Slot availability semantics (Phase 1)
+
+`pipeline.stages.availability_stage.apply_availability` computes `unavailable_at` and `current_status` per slot using booking lifecycle events.
+
+Status resolution behavior:
+
+- `removed`, `completed`, `no_show`, `rescheduled`: slot becomes unavailable at the first event time
+- `booked`: slot becomes unavailable at booking time unless a later `canceled` event exists
+- latest event `canceled`: status returns to `open` if the slot start is still in the future
+- no events and slot start in the past: `expired`
+- no events and slot start in the future: `open`
+
+`unavailable_at` always falls back to `slot_start_at` to prevent null availability windows.
+
+## Development checks
+
+Run these before committing:
 
 ```bash
 pytest
+ruff check .
+black --check .
 ```
+
+## Notes on idempotency
+
+- Dimension tables (`businesses`, `providers`, `services`, `locations`, `customers`) are replaced per `scenario_id`.
+- Fact-like tables (`slots`, `booking_events`) are replaced per `scenario_id` + `run_id`.
+- Re-running the same configuration should produce stable identifiers and deterministic slot state.
