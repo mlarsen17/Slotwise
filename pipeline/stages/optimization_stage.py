@@ -66,7 +66,14 @@ def recommend_pricing_actions(
           AND s.current_status = 'open'
           AND s.slot_start_at >= ?
         """,
-        [feature_snapshot_version, feature_snapshot_version, feature_snapshot_version, scenario_id, run_id, effective_ts],
+        [
+            feature_snapshot_version,
+            feature_snapshot_version,
+            feature_snapshot_version,
+            scenario_id,
+            run_id,
+            effective_ts,
+        ],
     ).fetchdf()
 
     if df.empty:
@@ -95,11 +102,19 @@ def recommend_pricing_actions(
                 eligible = [0]
 
             underbooked = bool(row["underbooked"]) if pd.notna(row["underbooked"]) else False
-            severity = float(row["shortfall_score"] if pd.notna(row["shortfall_score"]) else row["severity_score"] or 0.0)
-            target = 0 if (healthy_zero_only and not underbooked) else _discount_from_severity(
-                severity,
-                breakpoints=severity_breakpoints,
-                discounts=discount_steps,
+            severity = float(
+                row["shortfall_score"]
+                if pd.notna(row["shortfall_score"])
+                else row["severity_score"] or 0.0
+            )
+            target = (
+                0
+                if (healthy_zero_only and not underbooked)
+                else _discount_from_severity(
+                    severity,
+                    breakpoints=severity_breakpoints,
+                    discounts=discount_steps,
+                )
             )
             chosen = max([v for v in eligible if v <= target], default=min(eligible))
             reason = "underbooked_optimizer" if underbooked else "healthy_no_discount"
@@ -149,7 +164,9 @@ def recommend_pricing_actions(
 
         output = pd.DataFrame.from_records(records)
 
-    conn.execute("DELETE FROM pricing_actions WHERE scenario_id = ? AND run_id = ?", [scenario_id, run_id])
+    conn.execute(
+        "DELETE FROM pricing_actions WHERE scenario_id = ? AND run_id = ?", [scenario_id, run_id]
+    )
     if not output.empty:
         conn.register("tmp_pricing_actions", output)
         conn.execute(

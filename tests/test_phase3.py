@@ -23,7 +23,9 @@ def _seed_minimal_dataset(conn) -> None:
     )
 
 
-def _insert_slot(conn, slot_id: str, start_at: str, visible_at: str, run_id: str = "run_phase3") -> None:
+def _insert_slot(
+    conn, slot_id: str, start_at: str, visible_at: str, run_id: str = "run_phase3"
+) -> None:
     conn.execute(
         """
         INSERT INTO slots (
@@ -41,7 +43,9 @@ def _insert_slot(conn, slot_id: str, start_at: str, visible_at: str, run_id: str
     )
 
 
-def _insert_event(conn, event_id: str, slot_id: str, event_type: str, event_at: str, run_id: str = "run_phase3") -> None:
+def _insert_event(
+    conn, event_id: str, slot_id: str, event_type: str, event_at: str, run_id: str = "run_phase3"
+) -> None:
     conn.execute(
         """
         INSERT INTO booking_events (
@@ -115,7 +119,9 @@ def test_phase3_scoring_contract_and_calibration(tmp_path: Path) -> None:
             "feature_snapshot_version",
         }
         assert expected_cols.issubset(set(output.columns))
-        rows = conn.execute("SELECT COUNT(*) FROM business_calibrations WHERE run_id='run_phase3'").fetchone()[0]
+        rows = conn.execute(
+            "SELECT COUNT(*) FROM business_calibrations WHERE run_id='run_phase3'"
+        ).fetchone()[0]
         assert rows >= 1
 
 

@@ -138,7 +138,10 @@ def score_slots(
         scoring["booking_probability"] = np.clip(booking_prob, 0.0, 1.0)
 
         calibration = (
-            scoring.groupby("business_id")["business_fill_trend"].mean().rename("local_fill").reset_index()
+            scoring.groupby("business_id")["business_fill_trend"]
+            .mean()
+            .rename("local_fill")
+            .reset_index()
         )
         global_fill = float(scoring["business_fill_trend"].mean()) if len(scoring) else 0.5
         if global_fill <= 0:
@@ -163,9 +166,13 @@ def score_slots(
             [run_id, scenario_id, feature_snapshot_version, model_version],
         )
 
-        scoring = scoring.merge(calibration[["business_id", "calibration_factor"]], on="business_id", how="left")
+        scoring = scoring.merge(
+            calibration[["business_id", "calibration_factor"]], on="business_id", how="left"
+        )
         scoring["calibrated_booking_probability"] = scoring.apply(
-            lambda row: clamp(float(row["booking_probability"]) * float(row["calibration_factor"]), 0.0, 1.0),
+            lambda row: clamp(
+                float(row["booking_probability"]) * float(row["calibration_factor"]), 0.0, 1.0
+            ),
             axis=1,
         )
         scoring["predicted_fill_by_start"] = (
@@ -173,11 +180,12 @@ def score_slots(
             + 0.5 * scoring["calibrated_booking_probability"]
         ).clip(0.0, 1.0)
         scoring["shortfall_score"] = (
-            scoring["severity_score"].fillna(0.0) * (1.0 - scoring["calibrated_booking_probability"])
+            scoring["severity_score"].fillna(0.0)
+            * (1.0 - scoring["calibrated_booking_probability"])
         ).clip(0.0, 1.0)
-        scoring["confidence_score"] = (2.0 * np.abs(scoring["calibrated_booking_probability"] - 0.5)).clip(
-            0.0, 1.0
-        )
+        scoring["confidence_score"] = (
+            2.0 * np.abs(scoring["calibrated_booking_probability"] - 0.5)
+        ).clip(0.0, 1.0)
         scoring["run_id"] = run_id
         scoring["scenario_id"] = scenario_id
         scoring["feature_snapshot_version"] = feature_snapshot_version
