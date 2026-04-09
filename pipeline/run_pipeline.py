@@ -10,6 +10,8 @@ from pipeline.stages.baseline_stage import compute_cohort_baselines
 from pipeline.stages.extract_stage import run_extract
 from pipeline.stages.feature_stage import materialize_feature_snapshot
 from pipeline.stages.load_stage import load_core_tables
+from pipeline.stages.optimization_stage import recommend_pricing_actions
+from pipeline.stages.scoring_stage import score_slots
 from pipeline.stages.underbooking_stage import detect_underbooking
 
 logging.basicConfig(
@@ -107,6 +109,47 @@ def run(config_path: str = "config/default.yaml") -> None:
             run_id,
             cfg.scenario_id,
             int((time.perf_counter() - t5) * 1000),
+        )
+
+        t6 = time.perf_counter()
+        score_slots(
+            conn,
+            scenario_id=cfg.scenario_id,
+            run_id=run_id,
+            feature_snapshot_version=feature_snapshot_version,
+            model_version=cfg.model_version(),
+            l2_c=cfg.scoring.l2_c,
+        )
+        logging.getLogger(__name__).info(
+            "stage=scoring run_id=%s scenario_id=%s elapsed_ms=%d",
+            run_id,
+            cfg.scenario_id,
+            int((time.perf_counter() - t6) * 1000),
+        )
+
+        t7 = time.perf_counter()
+        recommend_pricing_actions(
+            conn,
+            scenario_id=cfg.scenario_id,
+            run_id=run_id,
+            feature_snapshot_version=feature_snapshot_version,
+            effective_ts=effective_ts,
+            random_seed=cfg.random_seed,
+            action_ladder=cfg.action_ladder,
+            lead_time_windows_hours=cfg.lead_time_windows_hours,
+            max_discount_pct=cfg.global_discount_limits.max_pct,
+            excluded_services=cfg.optimizer.excluded_services,
+            price_floor_pct=cfg.optimizer.price_floor_pct,
+            healthy_zero_only=cfg.optimizer.healthy_zero_only,
+            severity_breakpoints=cfg.optimizer.severity_breakpoints,
+            discount_steps=cfg.optimizer.discount_steps,
+            exploration_share=cfg.optimizer.exploration_share,
+        )
+        logging.getLogger(__name__).info(
+            "stage=optimization run_id=%s scenario_id=%s elapsed_ms=%d",
+            run_id,
+            cfg.scenario_id,
+            int((time.perf_counter() - t7) * 1000),
         )
 
 

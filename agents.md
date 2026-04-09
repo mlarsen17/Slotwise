@@ -98,6 +98,13 @@ Before considering implementation work complete, agents must run all of the foll
 - `ruff check .`
 - `black --check .`
 
+Enforcement rules for every coding turn:
+- Treat these checks as mandatory and blocking.
+- Run all three commands after code changes and before commit.
+- If any check fails, fix the issue and rerun the full set until all pass.
+- Do not open a PR, report completion, or claim success without showing these checks were executed.
+- If a command cannot run due environment limitations, clearly report the exact failure and why it was not fixable locally.
+
 ---
 
 ## Expected codebase shape

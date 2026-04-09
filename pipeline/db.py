@@ -216,8 +216,24 @@ def bootstrap_db(conn: duckdb.DuckDBPyConnection) -> None:
         CREATE TABLE IF NOT EXISTS scoring_outputs (
           run_id TEXT,
           slot_id TEXT,
-          score DOUBLE,
-          scenario_id TEXT
+          scenario_id TEXT,
+          feature_snapshot_version TEXT,
+          business_id TEXT,
+          booking_probability DOUBLE,
+          calibrated_booking_probability DOUBLE,
+          predicted_fill_by_start DOUBLE,
+          shortfall_score DOUBLE,
+          confidence_score DOUBLE,
+          model_version TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS business_calibrations (
+          run_id TEXT,
+          scenario_id TEXT,
+          feature_snapshot_version TEXT,
+          business_id TEXT,
+          calibration_factor DOUBLE,
+          model_version TEXT
         );
 
         CREATE TABLE IF NOT EXISTS evaluation_results (
@@ -305,6 +321,17 @@ def _ensure_columns(conn: duckdb.DuckDBPyConnection) -> None:
             "ADD COLUMN IF NOT EXISTS confidence_score DOUBLE",
             "ADD COLUMN IF NOT EXISTS rationale_codes TEXT",
         ],
+        "scoring_outputs": [
+            "ADD COLUMN IF NOT EXISTS scenario_id TEXT",
+            "ADD COLUMN IF NOT EXISTS feature_snapshot_version TEXT",
+            "ADD COLUMN IF NOT EXISTS business_id TEXT",
+            "ADD COLUMN IF NOT EXISTS booking_probability DOUBLE",
+            "ADD COLUMN IF NOT EXISTS calibrated_booking_probability DOUBLE",
+            "ADD COLUMN IF NOT EXISTS predicted_fill_by_start DOUBLE",
+            "ADD COLUMN IF NOT EXISTS shortfall_score DOUBLE",
+            "ADD COLUMN IF NOT EXISTS confidence_score DOUBLE",
+            "ADD COLUMN IF NOT EXISTS model_version TEXT",
+        ],
     }
     conn.execute(
         """
@@ -320,6 +347,18 @@ def _ensure_columns(conn: duckdb.DuckDBPyConnection) -> None:
           severity_score DOUBLE,
           underbooked BOOLEAN,
           detection_reason TEXT
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS business_calibrations (
+          run_id TEXT,
+          scenario_id TEXT,
+          feature_snapshot_version TEXT,
+          business_id TEXT,
+          calibration_factor DOUBLE,
+          model_version TEXT
         )
         """
     )

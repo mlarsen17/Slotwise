@@ -15,6 +15,16 @@ underbooking:
   fill_weight: 0.4
   underbooking_threshold: 0.35
   sparse_baseline_fill_rate: 0.6
+scoring:
+  training_min_rows: 10
+  l2_c: 1.0
+optimizer:
+  excluded_services: []
+  price_floor_pct: 0.7
+  healthy_zero_only: true
+  severity_breakpoints: [0.2, 0.4, 0.7]
+  discount_steps: [5, 10, 15, 20]
+  exploration_share: 0.1
 scenario:
   business_count: 2
   providers_per_business: 2
