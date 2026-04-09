@@ -417,173 +417,173 @@ This phase does not introduce new product capabilities. It makes the existing pi
 
 ### Feature 2.1 — Cohort baseline framework
 
-* [ ] Define MVP cohort dimensions
+* [x] Define MVP cohort dimensions
 
-  * [ ] Day of week
-  * [ ] Time-of-day bucket
-  * [ ] Service type
-* [ ] Implement time-of-day bucketing
+  * [x] Day of week
+  * [x] Time-of-day bucket
+  * [x] Service type
+* [x] Implement time-of-day bucketing
 
-  * [ ] Define bucket boundaries in config
-  * [ ] Compute bucket for each slot
-  * [ ] Test edge cases around bucket boundaries
-* [ ] Build cohort baseline SQL models
+  * [x] Define bucket boundaries in config
+  * [x] Compute bucket for each slot
+  * [x] Test edge cases around bucket boundaries
+* [x] Build cohort baseline SQL models
 
-  * [ ] Compute historical fill rate by cohort
-  * [ ] Compute expected booking pace by cohort
-  * [ ] Compute average booking lead time by cohort
-  * [ ] Compute realized completion rate by cohort
-* [ ] Persist cohort baselines
+  * [x] Compute historical fill rate by cohort
+  * [x] Compute expected booking pace by cohort
+  * [x] Compute average booking lead time by cohort
+  * [x] Compute realized completion rate by cohort
+* [x] Persist cohort baselines
 
-  * [ ] Write to `cohort_baselines`
-  * [ ] Attach `feature_snapshot_version`
-  * [ ] Attach `run_id` and `scenario_id`
-* [ ] Validate cohort quality
+  * [x] Write to `cohort_baselines`
+  * [x] Attach `feature_snapshot_version`
+  * [x] Attach `run_id` and `scenario_id`
+* [x] Validate cohort quality
 
-  * [ ] Check for cohorts with too few observations
-  * [ ] Decide fallback behavior for sparse cohorts
-  * [ ] Log sparse cohort counts
+  * [x] Check for cohorts with too few observations
+  * [x] Decide fallback behavior for sparse cohorts
+  * [x] Log sparse cohort counts
 
 ### Feature 2.2 — Feature materialization framework
 
-* [ ] Define feature snapshot contract
+* [x] Define feature snapshot contract
 
-  * [ ] Primary key should include `internal_slot_id` and `feature_snapshot_version`
-  * [ ] Every feature row should carry `run_id` and `scenario_id`
-  * [ ] Feature generation must use deterministic effective time
-* [ ] Implement feature table creation pattern
+  * [x] Primary key should include `internal_slot_id` and `feature_snapshot_version`
+  * [x] Every feature row should carry `run_id` and `scenario_id`
+  * [x] Feature generation must use deterministic effective time
+* [x] Implement feature table creation pattern
 
-  * [ ] Use `CREATE OR REPLACE TABLE` or equivalent idempotent write pattern
-  * [ ] Separate intermediate SQL models from final materialized feature table
-* [ ] Create shared feature generation utilities
+  * [x] Use `CREATE OR REPLACE TABLE` or equivalent idempotent write pattern
+  * [x] Separate intermediate SQL models from final materialized feature table
+* [x] Create shared feature generation utilities
 
-  * [ ] Time delta calculations
-  * [ ] Null handling
-  * [ ] Safe rate computation
-  * [ ] Cohort joins
-  * [ ] Fallback logic for sparse data
+  * [x] Time delta calculations
+  * [x] Null handling
+  * [x] Safe rate computation
+  * [x] Cohort joins
+  * [x] Fallback logic for sparse data
 
 ### Feature 2.3 — Slot demand history features
 
-* [ ] Implement historical fill features
+* [x] Implement historical fill features
 
-  * [ ] Historical fill rate for similar slots
-  * [ ] Same-provider same-service fill rate
-  * [ ] Same-business same-service trailing fill
-* [ ] Implement booking pace features
+  * [x] Historical fill rate for similar slots
+  * [x] Same-provider same-service fill rate
+  * [x] Same-business same-service trailing fill
+* [x] Implement booking pace features
 
-  * [ ] Expected booking pace for similar slots
-  * [ ] Observed booking pace for current slot state
-  * [ ] Pace deviation from cohort baseline
-* [ ] Implement lead-time features
+  * [x] Expected booking pace for similar slots
+  * [x] Observed booking pace for current slot state
+  * [x] Pace deviation from cohort baseline
+* [x] Implement lead-time features
 
-  * [ ] Average lead time to booking for cohort
-  * [ ] Hours until slot
-  * [ ] Days until slot
-* [ ] Validate history features
+  * [x] Average lead time to booking for cohort
+  * [x] Hours until slot
+  * [x] Days until slot
+* [x] Validate history features
 
-  * [ ] Confirm rates fall within valid ranges
-  * [ ] Confirm no divide-by-zero behavior
-  * [ ] Confirm fallback logic for sparse history
+  * [x] Confirm rates fall within valid ranges
+  * [x] Confirm no divide-by-zero behavior
+  * [x] Confirm fallback logic for sparse history
 
 ### Feature 2.4 — Temporal and scarcity features
 
-* [ ] Implement temporal features
+* [x] Implement temporal features
 
-  * [ ] Day of week
-  * [ ] Time-of-day bucket
-  * [ ] Slot duration
-  * [ ] Effective lead-time band
-* [ ] Implement scarcity features
+  * [x] Day of week
+  * [x] Time-of-day bucket
+  * [x] Slot duration
+  * [x] Effective lead-time band
+* [x] Implement scarcity features
 
-  * [ ] Remaining slots for same provider on same day
-  * [ ] Remaining similar-service slots in comparable time window
-  * [ ] Inventory density around slot start
-* [ ] Validate scarcity features
+  * [x] Remaining slots for same provider on same day
+  * [x] Remaining similar-service slots in comparable time window
+  * [x] Inventory density around slot start
+* [x] Validate scarcity features
 
-  * [ ] Confirm current slot is excluded or included consistently in counts
-  * [ ] Confirm same-day counts are correct
-  * [ ] Confirm window definitions are stable and documented
+  * [x] Confirm current slot is excluded or included consistently in counts
+  * [x] Confirm same-day counts are correct
+  * [x] Confirm window definitions are stable and documented
 
 ### Feature 2.5 — Operational features
 
-* [ ] Implement provider utilization features
+* [x] Implement provider utilization features
 
-  * [ ] Trailing 7-day utilization
-  * [ ] Trailing 14-day utilization
-  * [ ] Trailing 28-day utilization
-* [ ] Implement booking volume features
+  * [x] Trailing 7-day utilization
+  * [x] Trailing 14-day utilization
+  * [x] Trailing 28-day utilization
+* [x] Implement booking volume features
 
-  * [ ] Trailing 7-day bookings
-  * [ ] Trailing 14-day bookings
-  * [ ] Trailing 28-day bookings
-* [ ] Implement disruption features
+  * [x] Trailing 7-day bookings
+  * [x] Trailing 14-day bookings
+  * [x] Trailing 28-day bookings
+* [x] Implement disruption features
 
-  * [ ] Cancellation rate by slot pattern
-  * [ ] No-show rate by slot pattern
-  * [ ] Reschedule rate by slot pattern
-* [ ] Implement business trend features
+  * [x] Cancellation rate by slot pattern
+  * [x] No-show rate by slot pattern
+  * [x] Reschedule rate by slot pattern
+* [x] Implement business trend features
 
-  * [ ] Business-level fill trend
-  * [ ] Business-level booking trend
-* [ ] Validate operational features
+  * [x] Business-level fill trend
+  * [x] Business-level booking trend
+* [x] Validate operational features
 
-  * [ ] Check valid ranges
-  * [ ] Check sparse-history fallback
-  * [ ] Check window boundaries
+  * [x] Check valid ranges
+  * [x] Check sparse-history fallback
+  * [x] Check window boundaries
 
 ### Feature 2.6 — Underbooking detection logic
 
-* [ ] Define underbooking detection inputs
+* [x] Define underbooking detection inputs
 
-  * [ ] Cohort expected pace
-  * [ ] Observed pace
-  * [ ] Cohort expected fill
-  * [ ] Predicted or baseline fill by start
-* [ ] Implement pace gap calculation
+  * [x] Cohort expected pace
+  * [x] Observed pace
+  * [x] Cohort expected fill
+  * [x] Predicted or baseline fill by start
+* [x] Implement pace gap calculation
 
-  * [ ] Compute observed pace
-  * [ ] Compute cohort expected pace at comparable lead time
-  * [ ] Compute normalized pace gap
-* [ ] Implement fill gap calculation
+  * [x] Compute observed pace
+  * [x] Compute cohort expected pace at comparable lead time
+  * [x] Compute normalized pace gap
+* [x] Implement fill gap calculation
 
-  * [ ] Compute expected fill baseline
-  * [ ] Compute slot-level projected fill
-  * [ ] Compute normalized fill gap
-* [ ] Implement severity score
+  * [x] Compute expected fill baseline
+  * [x] Compute slot-level projected fill
+  * [x] Compute normalized fill gap
+* [x] Implement severity score
 
-  * [ ] Define initial weighted formula
-  * [ ] Make thresholds configurable
-  * [ ] Clamp score to valid range
-* [ ] Implement underbooked classification
+  * [x] Define initial weighted formula
+  * [x] Make thresholds configurable
+  * [x] Clamp score to valid range
+* [x] Implement underbooked classification
 
-  * [ ] Set boolean `underbooked`
-  * [ ] Set `severity_score`
-  * [ ] Attach detection reason fields for debugging
-* [ ] Persist underbooking outputs
+  * [x] Set boolean `underbooked`
+  * [x] Set `severity_score`
+  * [x] Attach detection reason fields for debugging
+* [x] Persist underbooking outputs
 
-  * [ ] Create or update a dedicated table or view
-  * [ ] Join back to feature snapshot keys
-* [ ] Validate underbooking outputs
+  * [x] Create or update a dedicated table or view
+  * [x] Join back to feature snapshot keys
+* [x] Validate underbooking outputs
 
-  * [ ] Ensure known low-demand scenarios are flagged
-  * [ ] Ensure healthy slots are not overwhelmingly flagged
-  * [ ] Review severity score distribution
+  * [x] Ensure known low-demand scenarios are flagged
+  * [x] Ensure healthy slots are not overwhelmingly flagged
+  * [x] Review severity score distribution
 
 ### Feature 2.7 — Phase 2 validation and exit criteria
 
-* [ ] Add SQL or Python tests for cohort baselines
-* [ ] Add tests for feature materialization idempotency
-* [ ] Add tests for time-of-day bucket assignment
-* [ ] Add tests for severity score bounds
-* [ ] Run one scenario with intentionally depressed demand
-* [ ] Verify the following before closing Phase 2
+* [x] Add SQL or Python tests for cohort baselines
+* [x] Add tests for feature materialization idempotency
+* [x] Add tests for time-of-day bucket assignment
+* [x] Add tests for severity score bounds
+* [x] Run one scenario with intentionally depressed demand
+* [x] Verify the following before closing Phase 2
 
-  * [ ] Cohort baselines are computed
-  * [ ] Feature snapshots materialize cleanly
-  * [ ] Underbooking flags are produced
-  * [ ] Severity scores look directionally correct
-  * [ ] Reruns do not create duplicate outputs
+  * [x] Cohort baselines are computed
+  * [x] Feature snapshots materialize cleanly
+  * [x] Underbooking flags are produced
+  * [x] Severity scores look directionally correct
+  * [x] Reruns do not create duplicate outputs
 
 ---
 
