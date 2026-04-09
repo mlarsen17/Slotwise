@@ -122,6 +122,9 @@ def load_core_tables(
             )
 
         conn.execute(
+            "DELETE FROM pipeline_runs WHERE run_id = ? AND scenario_id = ?", [run_id, scenario_id]
+        )
+        conn.execute(
             """
             INSERT INTO pipeline_runs (run_id, scenario_id, effective_ts, config_hash, started_at, status)
             VALUES (?, ?, ?, ?, ?, 'running')

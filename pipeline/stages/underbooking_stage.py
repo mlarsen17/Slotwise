@@ -15,12 +15,14 @@ def detect_underbooking(
     pace_weight: float,
     fill_weight: float,
     underbooking_threshold: float,
+    sparse_baseline_fill_rate: float,
 ) -> pd.DataFrame:
+    """Detect underbooked slots from snapshot features with sparse-cohort fallback."""
     features = conn.execute(
         """
         SELECT slot_id, feature_snapshot_version, run_id, scenario_id,
                expected_booking_pace_per_day, observed_booking_pace_per_day,
-               cohort_fill_rate, hist_fill_rate_similar
+               cohort_fill_rate, hist_fill_rate_similar, cohort_is_sparse, hours_until_slot
         FROM feature_snapshots
         WHERE scenario_id = ? AND run_id = ? AND feature_snapshot_version = ?
         """,
@@ -37,12 +39,24 @@ def detect_underbooking(
             "expected_booking_pace_per_day"
         ].replace(0.0, 1.0)
 
-        features["projected_fill"] = (
-            features[["hist_fill_rate_similar", "cohort_fill_rate"]].fillna(0.0).mean(axis=1)
+        urgency = (1.0 - (features["hours_until_slot"] / 168.0).clip(lower=0.0, upper=1.0)).fillna(
+            1.0
         )
+        projected_from_pace = (
+            features["observed_booking_pace_per_day"]
+            * (features["hours_until_slot"].clip(lower=0.0) / 24.0)
+        ).clip(upper=1.0)
+        projected_fill = (
+            0.7 * projected_from_pace + 0.3 * features["hist_fill_rate_similar"]
+        ).clip(lower=0.0, upper=1.0)
+        features["projected_fill"] = projected_fill * urgency + features["cohort_fill_rate"].fillna(
+            0.0
+        ) * (1 - urgency)
+
+        sparse_mask = features["cohort_is_sparse"].fillna(True)
         features["expected_fill_baseline"] = features["cohort_fill_rate"].where(
-            features["cohort_fill_rate"] > 0,
-            0.6,
+            ~sparse_mask,
+            sparse_baseline_fill_rate,
         )
         features["fill_gap"] = (
             features["expected_fill_baseline"] - features["projected_fill"]
@@ -62,18 +76,21 @@ def detect_underbooking(
             .map(lambda v: clamp(float(v), 0.0, 1.0))
         )
         features["underbooked"] = features["severity_score"] >= underbooking_threshold
-        features["detection_reason"] = features.apply(
-            lambda row: (
-                "pace_gap_and_fill_gap"
-                if row["pace_gap_normalized"] > 0 and row["fill_gap_normalized"] > 0
-                else (
-                    "pace_gap"
-                    if row["pace_gap_normalized"] > 0
-                    else "fill_gap" if row["fill_gap_normalized"] > 0 else "healthy"
-                )
-            ),
-            axis=1,
-        )
+
+        def reason(row: pd.Series) -> str:
+            if bool(row.get("cohort_is_sparse", False)):
+                return "sparse_cohort_fallback"
+            has_pace = row["pace_gap_normalized"] > 0
+            has_fill = row["fill_gap_normalized"] > 0
+            if has_pace and has_fill:
+                return "pace_gap_and_fill_gap"
+            if has_pace:
+                return "pace_gap"
+            if has_fill:
+                return "fill_gap"
+            return "healthy"
+
+        features["detection_reason"] = features.apply(reason, axis=1)
         output = features[
             [
                 "slot_id",
@@ -106,4 +123,18 @@ def detect_underbooking(
             SELECT * FROM tmp_underbooking
             """
         )
+        dupes = conn.execute(
+            """
+            SELECT COUNT(*) FROM (
+              SELECT slot_id, COUNT(*) AS c
+              FROM underbooking_outputs
+              WHERE scenario_id = ? AND run_id = ? AND feature_snapshot_version = ?
+              GROUP BY 1
+              HAVING COUNT(*) > 1
+            )
+            """,
+            [scenario_id, run_id, feature_snapshot_version],
+        ).fetchone()[0]
+        if dupes:
+            raise ValueError("Duplicate underbooking rows detected")
     return output
