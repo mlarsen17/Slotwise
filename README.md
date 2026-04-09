@@ -2,7 +2,7 @@
 
 Slotwise is a simulation-first MVP for a demand-aware pricing engine focused on underbooked appointment slots.
 
-The current codebase implements the Phase 1 data foundation:
+The current codebase implements the Phase 1 foundation and Phase 2 underbooking analytics:
 
 - deterministic synthetic extraction via the Medscheduler wrapper
 - normalization into stable IDs and canonical entities
@@ -10,8 +10,11 @@ The current codebase implements the Phase 1 data foundation:
 - idempotent loading for core tables scoped by `scenario_id` + `run_id`
 - availability derivation for each slot (`visible_at`, `unavailable_at`, `current_status`)
 - repeatable pipeline execution and regression tests
+- cohort baseline computation at snapshot time (`effective_ts`)
+- snapshot-safe feature materialization with trailing-window metrics (7d/14d/28d)
+- deterministic underbooking detection with sparse-cohort fallback controls
 
-> Scope note: this repository currently prepares the analytical data model and slot availability state. Pricing recommendations and UI surfaces are scaffolded but not yet implemented.
+> Scope note: this repository now includes underbooking analytics outputs (`cohort_baselines`, `feature_snapshots`, `underbooking_outputs`). Pricing optimization and UI surfaces remain scaffolded.
 
 ## Repository layout
 

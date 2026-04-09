@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 LOGGER = logging.getLogger(__name__)
 
@@ -25,6 +25,7 @@ class UnderbookingSettings(BaseModel):
     pace_weight: float = 0.6
     fill_weight: float = 0.4
     underbooking_threshold: float = 0.35
+    sparse_baseline_fill_rate: float = 0.6
 
 
 class ScenarioSettings(BaseModel):
@@ -50,8 +51,8 @@ class AppConfig(BaseModel):
     lead_time_windows_hours: list[int]
     global_discount_limits: GlobalDiscountLimits
     scenario: ScenarioSettings
-    time_of_day_buckets: TimeOfDayBuckets = TimeOfDayBuckets()
-    underbooking: UnderbookingSettings = UnderbookingSettings()
+    time_of_day_buckets: TimeOfDayBuckets = Field(default_factory=TimeOfDayBuckets)
+    underbooking: UnderbookingSettings = Field(default_factory=UnderbookingSettings)
 
     @field_validator("duckdb_path", mode="before")
     @classmethod
@@ -77,7 +78,8 @@ class AppConfig(BaseModel):
             f"{self.scenario_id}|{self.source_run_id}|{self.random_seed}|"
             f"{self.effective_ts.isoformat()}|{self.action_ladder}|"
             f"{self.lead_time_windows_hours}|{self.global_discount_limits.model_dump()}|"
-            f"{self.scenario.model_dump()}"
+            f"{self.scenario.model_dump()}|{self.time_of_day_buckets.model_dump()}|"
+            f"{self.underbooking.model_dump()}"
         )
         return hashlib.sha256(base.encode()).hexdigest()[:16]
 

@@ -100,6 +100,7 @@ def run(config_path: str = "config/default.yaml") -> None:
             pace_weight=cfg.underbooking.pace_weight,
             fill_weight=cfg.underbooking.fill_weight,
             underbooking_threshold=cfg.underbooking.underbooking_threshold,
+            sparse_baseline_fill_rate=cfg.underbooking.sparse_baseline_fill_rate,
         )
         logging.getLogger(__name__).info(
             "stage=underbooking run_id=%s scenario_id=%s elapsed_ms=%d",
