@@ -8,6 +8,12 @@ lead_time_windows_hours: [24, 72, 168]
 global_discount_limits:
   min_pct: 0
   max_pct: 20
+time_of_day_buckets:
+  boundaries_hours: [0, 12, 17, 24]
+underbooking:
+  pace_weight: 0.6
+  fill_weight: 0.4
+  underbooking_threshold: 0.35
 scenario:
   business_count: 2
   providers_per_business: 2

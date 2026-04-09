@@ -17,6 +17,16 @@ class GlobalDiscountLimits(BaseModel):
     max_pct: int = 20
 
 
+class TimeOfDayBuckets(BaseModel):
+    boundaries_hours: list[int] = [0, 12, 17, 24]
+
+
+class UnderbookingSettings(BaseModel):
+    pace_weight: float = 0.6
+    fill_weight: float = 0.4
+    underbooking_threshold: float = 0.35
+
+
 class ScenarioSettings(BaseModel):
     business_count: int = 2
     providers_per_business: int = 2
@@ -40,6 +50,8 @@ class AppConfig(BaseModel):
     lead_time_windows_hours: list[int]
     global_discount_limits: GlobalDiscountLimits
     scenario: ScenarioSettings
+    time_of_day_buckets: TimeOfDayBuckets = TimeOfDayBuckets()
+    underbooking: UnderbookingSettings = UnderbookingSettings()
 
     @field_validator("duckdb_path", mode="before")
     @classmethod

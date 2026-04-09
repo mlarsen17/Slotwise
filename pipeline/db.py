@@ -138,19 +138,72 @@ def bootstrap_db(conn: duckdb.DuckDBPyConnection) -> None:
           status TEXT
         );
 
-        CREATE TABLE IF NOT EXISTS feature_snapshots (
-          feature_snapshot_version TEXT,
-          slot_id TEXT,
-          scenario_id TEXT
-        );
-
         CREATE TABLE IF NOT EXISTS cohort_baselines (
           cohort_id TEXT,
-          metric_name TEXT,
-          metric_value DOUBLE,
+          day_of_week TEXT,
+          time_of_day_bucket TEXT,
+          service_type TEXT,
+          observation_count INTEGER,
+          fill_rate DOUBLE,
+          expected_booking_pace_per_day DOUBLE,
+          avg_lead_time_hours DOUBLE,
+          completion_rate DOUBLE,
+          is_sparse BOOLEAN,
           feature_snapshot_version TEXT,
           run_id TEXT,
           scenario_id TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS feature_snapshots (
+          slot_id TEXT,
+          feature_snapshot_version TEXT,
+          run_id TEXT,
+          scenario_id TEXT,
+          day_of_week TEXT,
+          time_of_day_bucket TEXT,
+          service_type TEXT,
+          slot_duration_minutes INTEGER,
+          effective_lead_time_band TEXT,
+          hours_until_slot DOUBLE,
+          days_until_slot DOUBLE,
+          hist_fill_rate_similar DOUBLE,
+          fill_rate_provider_service DOUBLE,
+          fill_rate_business_service DOUBLE,
+          expected_booking_pace_per_day DOUBLE,
+          observed_booking_pace_per_day DOUBLE,
+          pace_deviation DOUBLE,
+          avg_lead_time_hours DOUBLE,
+          remaining_provider_slots_same_day INTEGER,
+          remaining_service_slots_window INTEGER,
+          inventory_density_2h DOUBLE,
+          provider_utilization_7d DOUBLE,
+          provider_utilization_14d DOUBLE,
+          provider_utilization_28d DOUBLE,
+          booking_volume_7d DOUBLE,
+          booking_volume_14d DOUBLE,
+          booking_volume_28d DOUBLE,
+          cancel_rate_pattern DOUBLE,
+          no_show_rate_pattern DOUBLE,
+          reschedule_rate_pattern DOUBLE,
+          business_fill_trend DOUBLE,
+          business_booking_trend DOUBLE,
+          cohort_fill_rate DOUBLE,
+          cohort_completion_rate DOUBLE,
+          cohort_is_sparse BOOLEAN
+        );
+
+        CREATE TABLE IF NOT EXISTS underbooking_outputs (
+          slot_id TEXT,
+          feature_snapshot_version TEXT,
+          run_id TEXT,
+          scenario_id TEXT,
+          pace_gap DOUBLE,
+          pace_gap_normalized DOUBLE,
+          fill_gap DOUBLE,
+          fill_gap_normalized DOUBLE,
+          severity_score DOUBLE,
+          underbooked BOOLEAN,
+          detection_reason TEXT
         );
 
         CREATE TABLE IF NOT EXISTS optimizer_configs (
@@ -197,6 +250,51 @@ def _ensure_columns(conn: duckdb.DuckDBPyConnection) -> None:
             "ADD COLUMN IF NOT EXISTS run_id TEXT",
             "ADD COLUMN IF NOT EXISTS effective_ts TIMESTAMP",
         ],
+        "cohort_baselines": [
+            "ADD COLUMN IF NOT EXISTS day_of_week TEXT",
+            "ADD COLUMN IF NOT EXISTS time_of_day_bucket TEXT",
+            "ADD COLUMN IF NOT EXISTS service_type TEXT",
+            "ADD COLUMN IF NOT EXISTS observation_count INTEGER",
+            "ADD COLUMN IF NOT EXISTS fill_rate DOUBLE",
+            "ADD COLUMN IF NOT EXISTS expected_booking_pace_per_day DOUBLE",
+            "ADD COLUMN IF NOT EXISTS avg_lead_time_hours DOUBLE",
+            "ADD COLUMN IF NOT EXISTS completion_rate DOUBLE",
+            "ADD COLUMN IF NOT EXISTS is_sparse BOOLEAN",
+        ],
+        "feature_snapshots": [
+            "ADD COLUMN IF NOT EXISTS run_id TEXT",
+            "ADD COLUMN IF NOT EXISTS day_of_week TEXT",
+            "ADD COLUMN IF NOT EXISTS time_of_day_bucket TEXT",
+            "ADD COLUMN IF NOT EXISTS service_type TEXT",
+            "ADD COLUMN IF NOT EXISTS slot_duration_minutes INTEGER",
+            "ADD COLUMN IF NOT EXISTS effective_lead_time_band TEXT",
+            "ADD COLUMN IF NOT EXISTS hours_until_slot DOUBLE",
+            "ADD COLUMN IF NOT EXISTS days_until_slot DOUBLE",
+            "ADD COLUMN IF NOT EXISTS hist_fill_rate_similar DOUBLE",
+            "ADD COLUMN IF NOT EXISTS fill_rate_provider_service DOUBLE",
+            "ADD COLUMN IF NOT EXISTS fill_rate_business_service DOUBLE",
+            "ADD COLUMN IF NOT EXISTS expected_booking_pace_per_day DOUBLE",
+            "ADD COLUMN IF NOT EXISTS observed_booking_pace_per_day DOUBLE",
+            "ADD COLUMN IF NOT EXISTS pace_deviation DOUBLE",
+            "ADD COLUMN IF NOT EXISTS avg_lead_time_hours DOUBLE",
+            "ADD COLUMN IF NOT EXISTS remaining_provider_slots_same_day INTEGER",
+            "ADD COLUMN IF NOT EXISTS remaining_service_slots_window INTEGER",
+            "ADD COLUMN IF NOT EXISTS inventory_density_2h DOUBLE",
+            "ADD COLUMN IF NOT EXISTS provider_utilization_7d DOUBLE",
+            "ADD COLUMN IF NOT EXISTS provider_utilization_14d DOUBLE",
+            "ADD COLUMN IF NOT EXISTS provider_utilization_28d DOUBLE",
+            "ADD COLUMN IF NOT EXISTS booking_volume_7d DOUBLE",
+            "ADD COLUMN IF NOT EXISTS booking_volume_14d DOUBLE",
+            "ADD COLUMN IF NOT EXISTS booking_volume_28d DOUBLE",
+            "ADD COLUMN IF NOT EXISTS cancel_rate_pattern DOUBLE",
+            "ADD COLUMN IF NOT EXISTS no_show_rate_pattern DOUBLE",
+            "ADD COLUMN IF NOT EXISTS reschedule_rate_pattern DOUBLE",
+            "ADD COLUMN IF NOT EXISTS business_fill_trend DOUBLE",
+            "ADD COLUMN IF NOT EXISTS business_booking_trend DOUBLE",
+            "ADD COLUMN IF NOT EXISTS cohort_fill_rate DOUBLE",
+            "ADD COLUMN IF NOT EXISTS cohort_completion_rate DOUBLE",
+            "ADD COLUMN IF NOT EXISTS cohort_is_sparse BOOLEAN",
+        ],
         "pricing_actions": [
             "ADD COLUMN IF NOT EXISTS eligible_action_set TEXT",
             "ADD COLUMN IF NOT EXISTS decision_reason TEXT",
@@ -208,6 +306,23 @@ def _ensure_columns(conn: duckdb.DuckDBPyConnection) -> None:
             "ADD COLUMN IF NOT EXISTS rationale_codes TEXT",
         ],
     }
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS underbooking_outputs (
+          slot_id TEXT,
+          feature_snapshot_version TEXT,
+          run_id TEXT,
+          scenario_id TEXT,
+          pace_gap DOUBLE,
+          pace_gap_normalized DOUBLE,
+          fill_gap DOUBLE,
+          fill_gap_normalized DOUBLE,
+          severity_score DOUBLE,
+          underbooked BOOLEAN,
+          detection_reason TEXT
+        )
+        """
+    )
     for table, stmts in migrations.items():
         for stmt in stmts:
             conn.execute(f"ALTER TABLE {table} {stmt}")
