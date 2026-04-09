@@ -587,6 +587,190 @@ This phase does not introduce new product capabilities. It makes the existing pi
 
 ---
 
+## Phase 2.1 — Feature Correctness, Snapshot Semantics, and Underbooking Reliability
+
+### Goal
+
+Tighten Phase 2 so the feature layer is trustworthy for downstream scoring and optimization by:
+
+* [ ] removing future leakage
+* [ ] replacing placeholder rolling/window metrics with true time-bounded calculations
+* [ ] improving idempotency and reproducibility
+* [ ] adding phase-2-specific tests
+
+### Feature 2.1.1 — Snapshot-safe baseline computation
+
+* [ ] Update `compute_cohort_baselines()` so all inputs are computed as of `effective_ts`, not from the full run history
+* [ ] Filter booking events to `event_at <= effective_ts` before deriving:
+
+  * [ ] first booked timestamp
+  * [ ] completion flags
+  * [ ] booking pace inputs
+* [ ] Exclude slots not yet visible by `effective_ts` from cohort observations
+* [ ] Decide whether slots already started before `effective_ts` remain in baseline training data and document the rule explicitly
+* [ ] Recompute `fill_rate`, `expected_booking_pace_per_day`, `avg_lead_time_hours`, and `completion_rate` using only snapshot-available data
+* [ ] Add an explicit fallback strategy for sparse cohorts instead of silently relying on whatever rows happen to remain
+* [ ] Document baseline semantics in code comments:
+
+  * [ ] “historical cohort metrics are computed from information available at snapshot time”
+  * [ ] “no post-snapshot events may affect cohort baselines”
+
+### Feature 2.1.2 — Snapshot-safe feature materialization
+
+* [ ] Update `materialize_feature_snapshot()` so every feature is derived only from data available at `effective_ts`
+* [ ] Filter events to `event_at <= effective_ts` before calculating:
+
+  * [ ] `booked_flag`
+  * [ ] `lead_time_hours`
+  * [ ] utilization metrics
+  * [ ] booking volumes
+  * [ ] cancellation / no-show / reschedule rates
+* [ ] Revisit `booked_flag` semantics for future slots:
+
+  * [ ] booked by snapshot time
+  * [ ] not ever booked in the full run
+* [ ] Ensure `hours_until_slot` and `days_until_slot` remain relative to `effective_ts`
+* [ ] Rename or clarify fields where semantics are ambiguous:
+
+  * [ ] either replace `service_type` with `service_id`
+  * [ ] or carry both fields explicitly throughout the pipeline
+* [ ] Add docstrings describing each feature as either:
+
+  * [ ] historical feature
+  * [ ] current-state feature
+  * [ ] cohort-derived feature
+
+### Feature 2.1.3 — Replace fake rolling windows with true calculations
+
+* [ ] Replace placeholder rolling-window calculations in `feature_stage.py`
+* [ ] Define precise window semantics for each metric:
+
+  * [ ] trailing 7 days from `effective_ts`
+  * [ ] trailing 14 days from `effective_ts`
+  * [ ] trailing 28 days from `effective_ts`
+* [ ] For `provider_utilization_{window}d`, compute:
+
+  * [ ] numerator = booked or completed slots for that provider within the trailing window
+  * [ ] denominator = eligible visible/bookable slots for that provider within the same window
+* [ ] For `booking_volume_{window}d`, compute:
+
+  * [ ] count of booking events or first-booked slots within the trailing window
+  * [ ] choose one definition and document it
+* [ ] Replace constant pattern-rate features with true pattern-level rates:
+
+  * [ ] `cancel_rate_pattern`
+  * [ ] `no_show_rate_pattern`
+  * [ ] `reschedule_rate_pattern`
+* [ ] Define the grouping key for “pattern”:
+
+  * [ ] day of week
+  * [ ] time-of-day bucket
+  * [ ] service
+  * [ ] optionally provider or business
+* [ ] Replace `inventory_density_2h = remaining_service_slots_window` with a true local density calculation:
+
+  * [ ] count comparable slots within ±2 hours of the slot start
+  * [ ] or within a forward-looking 2-hour neighborhood
+  * [ ] choose and document one approach
+* [ ] Replace `remaining_provider_slots_same_day` so it counts only slots still remaining relative to `effective_ts`, not all provider-day slots
+* [ ] Add helper utilities for window filtering so logic is reusable and testable
+* [ ] Add comments clarifying whether each rolling feature is:
+
+  * [ ] event-time-based
+  * [ ] slot-start-time-based
+  * [ ] visibility-window-based
+
+### Feature 2.1.4 — Improve underbooking signal quality
+
+* [ ] Rework `detect_underbooking()` so the fill component is not just a blend of closely related historical aggregates
+* [ ] Define a more explicit projected fill estimate using:
+
+  * [ ] current slot state at snapshot
+  * [ ] lead time remaining
+  * [ ] cohort booking pace trajectory
+* [ ] Remove or justify the hardcoded `0.6` fallback baseline
+* [ ] Make sparse-cohort fallback configurable in `config/default.yaml`
+* [ ] Preserve `severity_score` as a continuous value in `[0, 1]`
+* [ ] Keep `detection_reason`, but expand reason taxonomy if helpful:
+
+  * [ ] `pace_gap`
+  * [ ] `fill_gap`
+  * [ ] `pace_gap_and_fill_gap`
+  * [ ] `sparse_cohort_fallback`
+  * [ ] `healthy`
+
+### Feature 2.1.5 — Reproducibility and idempotency hardening
+
+* [ ] Fix `pipeline_runs` write semantics with uniqueness protection or upsert behavior
+* [ ] Decide one model:
+
+  * [ ] append-only execution log with separate execution ID
+  * [ ] or unique `(run_id, scenario_id)` with update/upsert
+* [ ] Expand `config_hash()` to include all Phase 2 behavior settings, especially:
+
+  * [ ] `time_of_day_buckets`
+  * [ ] `underbooking`
+* [ ] Add explicit duplicate checks after inserts for:
+
+  * [ ] `cohort_baselines`
+  * [ ] `feature_snapshots`
+  * [ ] `underbooking_outputs`
+* [ ] Consider adding logical uniqueness assertions in code even if DuckDB constraints remain minimal
+
+### Feature 2.1.6 — Phase 2 validation and tests
+
+* [ ] Add a dedicated `tests/test_phase2.py`
+* [ ] Add a test proving no future-event leakage:
+
+  * [ ] create a slot
+  * [ ] create booking/completion events after `effective_ts`
+  * [ ] assert baselines/features ignore them
+* [ ] Add a test for true rolling-window utilization:
+
+  * [ ] events inside 7d count toward 7d/14d/28d
+  * [ ] older events count only toward larger windows
+* [ ] Add a test for true rolling-window booking volume with the same structure
+* [ ] Add a test for pattern-rate calculations:
+
+  * [ ] cancellation/no-show/reschedule rates differ by cohort pattern when inputs differ
+* [ ] Add a test for `remaining_provider_slots_same_day`:
+
+  * [ ] only future or still-relevant slots are counted
+* [ ] Add a test for sparse cohort fallback behavior
+* [ ] Add a test for deterministic reruns:
+
+  * [ ] same config
+  * [ ] same snapshot time
+  * [ ] same outputs
+* [ ] Add a test for changed config hash when underbooking settings or bucket boundaries change
+
+### Feature 2.1.7 — Code hygiene and semantics cleanup
+
+* [ ] Replace direct model defaults in `AppConfig` with `default_factory` for cleaner Pydantic usage
+* [ ] Add docstrings to:
+
+  * [ ] `compute_cohort_baselines()`
+  * [ ] `materialize_feature_snapshot()`
+  * [ ] `detect_underbooking()`
+* [ ] Add a small internal metrics summary after each stage:
+
+  * [ ] rows processed
+  * [ ] sparse cohorts
+  * [ ] underbooked slot count
+  * [ ] null fallback counts
+* [ ] Update README/project status language so it no longer describes the repo as only Phase 1
+
+### Feature 2.1.8 — Exit criteria
+
+* [ ] No phase-two feature uses data after `effective_ts`
+* [ ] Rolling-window metrics are truly time-bounded
+* [ ] Placeholder window features are removed
+* [ ] Underbooking outputs are deterministic and explainable
+* [ ] New tests cover leakage, rolling windows, sparse fallback, and determinism
+* [ ] Phase 2 outputs are trustworthy enough to support Phase 3 scoring and optimization
+
+---
+
 ## Phase 3 — Scoring, Optimization, Explanations, and Exploration
 
 ### Feature 3.1 — Scoring data contract
