@@ -65,11 +65,15 @@ def bootstrap_db(conn: duckdb.DuckDBPyConnection) -> None:
         );
 
         CREATE TABLE IF NOT EXISTS slots (
-          slot_id TEXT PRIMARY KEY,
+          slot_id TEXT,
           provider_id TEXT,
           business_id TEXT,
           service_id TEXT,
           location_id TEXT,
+          standard_price DOUBLE,
+          slot_duration_minutes INTEGER,
+          integration_id TEXT,
+          external_slot_id TEXT,
           source_slot_id TEXT,
           source_provider_id TEXT,
           source_business_id TEXT,
@@ -83,13 +87,19 @@ def bootstrap_db(conn: duckdb.DuckDBPyConnection) -> None:
           created_at TIMESTAMP,
           source_system TEXT,
           source_run_id TEXT,
-          scenario_id TEXT
+          scenario_id TEXT,
+          run_id TEXT,
+          effective_ts TIMESTAMP,
+          config_hash TEXT
         );
 
         CREATE TABLE IF NOT EXISTS booking_events (
-          event_id TEXT PRIMARY KEY,
+          event_id TEXT,
           slot_id TEXT,
           customer_id TEXT,
+          business_id TEXT,
+          provider_id TEXT,
+          service_type TEXT,
           source_event_id TEXT,
           source_slot_id TEXT,
           source_customer_id TEXT,
@@ -97,7 +107,9 @@ def bootstrap_db(conn: duckdb.DuckDBPyConnection) -> None:
           event_at TIMESTAMP,
           source_system TEXT,
           source_run_id TEXT,
-          scenario_id TEXT
+          scenario_id TEXT,
+          run_id TEXT,
+          effective_ts TIMESTAMP
         );
 
         CREATE TABLE IF NOT EXISTS pricing_actions (
@@ -105,8 +117,25 @@ def bootstrap_db(conn: duckdb.DuckDBPyConnection) -> None:
           slot_id TEXT,
           action_type TEXT,
           action_value DOUBLE,
+          eligible_action_set TEXT,
+          decision_reason TEXT,
+          was_exploration BOOLEAN,
+          exploration_policy TEXT,
+          decision_timestamp TIMESTAMP,
+          feature_snapshot_version TEXT,
+          confidence_score DOUBLE,
+          rationale_codes TEXT,
           run_id TEXT,
           scenario_id TEXT
+        );
+        
+        CREATE TABLE IF NOT EXISTS pipeline_runs (
+          run_id TEXT,
+          scenario_id TEXT,
+          effective_ts TIMESTAMP,
+          config_hash TEXT,
+          started_at TIMESTAMP,
+          status TEXT
         );
 
         CREATE TABLE IF NOT EXISTS feature_snapshots (
@@ -146,4 +175,39 @@ def bootstrap_db(conn: duckdb.DuckDBPyConnection) -> None:
         );
         """
     )
+    _ensure_columns(conn)
     LOGGER.info("DuckDB schema initialization complete")
+
+
+def _ensure_columns(conn: duckdb.DuckDBPyConnection) -> None:
+    migrations: dict[str, list[str]] = {
+        "slots": [
+            "ADD COLUMN IF NOT EXISTS standard_price DOUBLE",
+            "ADD COLUMN IF NOT EXISTS slot_duration_minutes INTEGER",
+            "ADD COLUMN IF NOT EXISTS integration_id TEXT",
+            "ADD COLUMN IF NOT EXISTS external_slot_id TEXT",
+            "ADD COLUMN IF NOT EXISTS run_id TEXT",
+            "ADD COLUMN IF NOT EXISTS effective_ts TIMESTAMP",
+            "ADD COLUMN IF NOT EXISTS config_hash TEXT",
+        ],
+        "booking_events": [
+            "ADD COLUMN IF NOT EXISTS business_id TEXT",
+            "ADD COLUMN IF NOT EXISTS provider_id TEXT",
+            "ADD COLUMN IF NOT EXISTS service_type TEXT",
+            "ADD COLUMN IF NOT EXISTS run_id TEXT",
+            "ADD COLUMN IF NOT EXISTS effective_ts TIMESTAMP",
+        ],
+        "pricing_actions": [
+            "ADD COLUMN IF NOT EXISTS eligible_action_set TEXT",
+            "ADD COLUMN IF NOT EXISTS decision_reason TEXT",
+            "ADD COLUMN IF NOT EXISTS was_exploration BOOLEAN",
+            "ADD COLUMN IF NOT EXISTS exploration_policy TEXT",
+            "ADD COLUMN IF NOT EXISTS decision_timestamp TIMESTAMP",
+            "ADD COLUMN IF NOT EXISTS feature_snapshot_version TEXT",
+            "ADD COLUMN IF NOT EXISTS confidence_score DOUBLE",
+            "ADD COLUMN IF NOT EXISTS rationale_codes TEXT",
+        ],
+    }
+    for table, stmts in migrations.items():
+        for stmt in stmts:
+            conn.execute(f"ALTER TABLE {table} {stmt}")

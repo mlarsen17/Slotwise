@@ -195,7 +195,7 @@ def _run_integrity_checks(
         if row["visible_at"] > row["slot_start_at"]:
             raise ValueError("Slot visible_at occurs after slot_start_at")
 
-    valid_event_types = {"booked", "canceled", "removed"}
+    valid_event_types = {"booked", "canceled", "removed", "completed", "no_show", "rescheduled"}
     seen_events = set()
     for row in booking_events:
         event_id = row["source_event_id"]
