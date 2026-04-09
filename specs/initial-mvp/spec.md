@@ -775,205 +775,205 @@ Tighten Phase 2 so the feature layer is trustworthy for downstream scoring and o
 
 ### Feature 3.1 — Scoring data contract
 
-* [ ] Define the model input dataset
+* [x] Define the model input dataset
 
-  * [ ] Select final feature columns
-  * [ ] Define target label for MVP scoring
-  * [ ] Exclude leakage fields
-  * [ ] Freeze feature ordering and names
-* [ ] Define scoring output contract
+  * [x] Select final feature columns
+  * [x] Define target label for MVP scoring
+  * [x] Exclude leakage fields
+  * [x] Freeze feature ordering and names
+* [x] Define scoring output contract
 
-  * [ ] `booking_probability`
-  * [ ] `predicted_fill_by_start`
-  * [ ] `shortfall_score`
-  * [ ] `confidence_score`
-  * [ ] `model_version`
-* [ ] Persist scoring outputs
+  * [x] `booking_probability`
+  * [x] `predicted_fill_by_start`
+  * [x] `shortfall_score`
+  * [x] `confidence_score`
+  * [x] `model_version`
+* [x] Persist scoring outputs
 
   * [x] Create `scoring_outputs`
-  * [ ] Key by `internal_slot_id`, `run_id`, `feature_snapshot_version`
+  * [x] Key by `internal_slot_id`, `run_id`, `feature_snapshot_version`
 
 ### Feature 3.2 — Pooled demand scoring model
 
-* [ ] Build initial training dataset
+* [x] Build initial training dataset
 
-  * [ ] Pull feature snapshots
-  * [ ] Join labels from booking outcomes
-  * [ ] Filter invalid or incomplete training examples
-* [ ] Implement baseline model training
+  * [x] Pull feature snapshots
+  * [x] Join labels from booking outcomes
+  * [x] Filter invalid or incomplete training examples
+* [x] Implement baseline model training
 
-  * [ ] Start with logistic regression or similar lightweight model
-  * [ ] Add train/validation split
-  * [ ] Train on pooled data across businesses
-  * [ ] Persist model artifact and metadata
-* [ ] Implement scoring logic
+  * [x] Start with logistic regression or similar lightweight model
+  * [x] Add train/validation split
+  * [x] Train on pooled data across businesses
+  * [x] Persist model artifact and metadata
+* [x] Implement scoring logic
 
-  * [ ] Load model artifact
-  * [ ] Score current eligible slots
-  * [ ] Write outputs to `scoring_outputs`
-* [ ] Validate scoring quality
+  * [x] Load model artifact
+  * [x] Score current eligible slots
+  * [x] Write outputs to `scoring_outputs`
+* [x] Validate scoring quality
 
-  * [ ] Inspect score distributions
-  * [ ] Confirm higher-risk slots have lower booking probability
-  * [ ] Confirm outputs are stable on rerun
+  * [x] Inspect score distributions
+  * [x] Confirm higher-risk slots have lower booking probability
+  * [x] Confirm outputs are stable on rerun
 
 ### Feature 3.3 — Business-level calibration
 
-* [ ] Define business calibration strategy
+* [x] Define business calibration strategy
 
-  * [ ] Choose adjustment based on business baseline fill or residual trend
-  * [ ] Keep it simple and transparent for MVP
-* [ ] Implement calibration calculation
+  * [x] Choose adjustment based on business baseline fill or residual trend
+  * [x] Keep it simple and transparent for MVP
+* [x] Implement calibration calculation
 
-  * [ ] Compute business-level adjustment factors
-  * [ ] Version and persist the factors
-* [ ] Apply calibration to pooled outputs
+  * [x] Compute business-level adjustment factors
+  * [x] Version and persist the factors
+* [x] Apply calibration to pooled outputs
 
-  * [ ] Adjust booking probability or shortfall score
-  * [ ] Clamp calibrated outputs to valid ranges
-* [ ] Validate calibration behavior
+  * [x] Adjust booking probability or shortfall score
+  * [x] Clamp calibrated outputs to valid ranges
+* [x] Validate calibration behavior
 
-  * [ ] Confirm business-specific differences are reflected
-  * [ ] Confirm calibration does not swamp the pooled model
-  * [ ] Compare calibrated vs uncalibrated outputs
+  * [x] Confirm business-specific differences are reflected
+  * [x] Confirm calibration does not swamp the pooled model
+  * [x] Compare calibrated vs uncalibrated outputs
 
 ### Feature 3.4 — Optimizer configuration and eligibility rules
 
-* [ ] Implement optimizer config model
+* [x] Implement optimizer config model
 
-  * [ ] Global config
-  * [ ] Business config
-  * [ ] Provider-level placeholder support
-* [ ] Implement fixed action ladder
+  * [x] Global config
+  * [x] Business config
+  * [x] Provider-level placeholder support
+* [x] Implement fixed action ladder
 
-  * [ ] 0%
-  * [ ] 5%
-  * [ ] 10%
-  * [ ] 15%
-  * [ ] 20%
-* [ ] Implement eligibility rules
+  * [x] 0%
+  * [x] 5%
+  * [x] 10%
+  * [x] 15%
+  * [x] 20%
+* [x] Implement eligibility rules
 
-  * [ ] Excluded services cannot be discounted
-  * [ ] Discount cannot exceed configured maximum
-  * [ ] Discount only allowed within lead-time windows
-  * [ ] Discount cannot violate price floor
-  * [ ] Healthy slots should usually remain at 0%
-* [ ] Implement eligible action set generation
+  * [x] Excluded services cannot be discounted
+  * [x] Discount cannot exceed configured maximum
+  * [x] Discount only allowed within lead-time windows
+  * [x] Discount cannot violate price floor
+  * [x] Healthy slots should usually remain at 0%
+* [x] Implement eligible action set generation
 
-  * [ ] Produce candidate actions per slot
-  * [ ] Persist or log `eligible_action_set`
-* [ ] Validate eligibility logic
+  * [x] Produce candidate actions per slot
+  * [x] Persist or log `eligible_action_set`
+* [x] Validate eligibility logic
 
-  * [ ] Test premium or excluded service behavior
-  * [ ] Test max-discount enforcement
-  * [ ] Test price-floor enforcement
-  * [ ] Test lead-time window enforcement
+  * [x] Test premium or excluded service behavior
+  * [x] Test max-discount enforcement
+  * [x] Test price-floor enforcement
+  * [x] Test lead-time window enforcement
 
 ### Feature 3.5 — Discount recommendation engine
 
-* [ ] Define recommendation policy
+* [x] Define recommendation policy
 
-  * [ ] If slot is not underbooked, recommend 0%
-  * [ ] If slot is underbooked, map severity and score to best action
-* [ ] Implement initial severity-to-action mapping
+  * [x] If slot is not underbooked, recommend 0%
+  * [x] If slot is underbooked, map severity and score to best action
+* [x] Implement initial severity-to-action mapping
 
-  * [ ] Add config-driven breakpoints
-  * [ ] Allow business overrides where appropriate
-* [ ] Compute final implied price
+  * [x] Add config-driven breakpoints
+  * [x] Allow business overrides where appropriate
+* [x] Compute final implied price
 
-  * [ ] Apply recommended action to standard price
-  * [ ] Confirm price floor rules are respected
-* [ ] Create recommendation output record
+  * [x] Apply recommended action to standard price
+  * [x] Confirm price floor rules are respected
+* [x] Create recommendation output record
 
-  * [ ] Set `recommended_action_type`
-  * [ ] Set `recommended_action_value`
-  * [ ] Set `confidence_score`
-  * [ ] Set `decision_reason`
-* [ ] Validate recommendations
+  * [x] Set `recommended_action_type`
+  * [x] Set `recommended_action_value`
+  * [x] Set `confidence_score`
+  * [x] Set `decision_reason`
+* [x] Validate recommendations
 
-  * [ ] Ensure only eligible actions are selected
-  * [ ] Ensure higher severity generally maps to higher discounts
-  * [ ] Ensure healthy slots are mostly 0%
+  * [x] Ensure only eligible actions are selected
+  * [x] Ensure higher severity generally maps to higher discounts
+  * [x] Ensure healthy slots are mostly 0%
 
 ### Feature 3.6 — Rationale code engine
 
-* [ ] Define rationale code taxonomy
+* [x] Define rationale code taxonomy
 
-  * [ ] Historically underbooked weekday afternoon
-  * [ ] Booking pace below baseline
-  * [ ] Short lead-time low fill
-  * [ ] Provider utilization below target
-  * [ ] Any other initial codes needed for explainability
-* [ ] Implement rule-based rationale generation
+  * [x] Historically underbooked weekday afternoon
+  * [x] Booking pace below baseline
+  * [x] Short lead-time low fill
+  * [x] Provider utilization below target
+  * [x] Any other initial codes needed for explainability
+* [x] Implement rule-based rationale generation
 
-  * [ ] Generate codes from feature values
-  * [ ] Generate codes from baseline deviations
-  * [ ] Generate codes from optimizer decisions
-* [ ] Persist rationale codes
+  * [x] Generate codes from feature values
+  * [x] Generate codes from baseline deviations
+  * [x] Generate codes from optimizer decisions
+* [x] Persist rationale codes
 
-  * [ ] Attach to recommendation output
-  * [ ] Store as JSON array in `pricing_actions`
-* [ ] Validate rationale quality
+  * [x] Attach to recommendation output
+  * [x] Store as JSON array in `pricing_actions`
+* [x] Validate rationale quality
 
-  * [ ] Confirm every discounted slot has at least one rationale code
-  * [ ] Confirm codes match actual slot context
-  * [ ] Eliminate redundant or contradictory codes
+  * [x] Confirm every discounted slot has at least one rationale code
+  * [x] Confirm codes match actual slot context
+  * [x] Eliminate redundant or contradictory codes
 
 ### Feature 3.7 — Exploration policy and logging
 
-* [ ] Define exploration policy
+* [x] Define exploration policy
 
-  * [ ] Configure exploration share
-  * [ ] Restrict exploration to eligible actions
-  * [ ] Seed randomness deterministically
-* [ ] Implement slot-level exploration override
+  * [x] Configure exploration share
+  * [x] Restrict exploration to eligible actions
+  * [x] Seed randomness deterministically
+* [x] Implement slot-level exploration override
 
-  * [ ] For eligible slots, randomly choose from allowed actions when exploration applies
-  * [ ] Otherwise use the optimizer result
-* [ ] Log exploration metadata
+  * [x] For eligible slots, randomly choose from allowed actions when exploration applies
+  * [x] Otherwise use the optimizer result
+* [x] Log exploration metadata
 
-  * [ ] `was_exploration`
-  * [ ] `exploration_policy`
-  * [ ] `decision_reason`
-  * [ ] `eligible_action_set`
-* [ ] Validate exploration behavior
+  * [x] `was_exploration`
+  * [x] `exploration_policy`
+  * [x] `decision_reason`
+  * [x] `eligible_action_set`
+* [x] Validate exploration behavior
 
-  * [ ] Confirm exploration fraction is within expected range
-  * [ ] Confirm reruns with same seed produce same exploratory choices
-  * [ ] Confirm no policy violations occur
+  * [x] Confirm exploration fraction is within expected range
+  * [x] Confirm reruns with same seed produce same exploratory choices
+  * [x] Confirm no policy violations occur
 
 ### Feature 3.8 — Pricing action persistence
 
-* [ ] Implement final `pricing_actions` write stage
+* [x] Implement final `pricing_actions` write stage
 
-  * [ ] Delete existing records for current `run_id` if needed
-  * [ ] Insert final recommendations
-  * [ ] Ensure primary keys are stable
-* [ ] Enforce idempotency
+  * [x] Delete existing records for current `run_id` if needed
+  * [x] Insert final recommendations
+  * [x] Ensure primary keys are stable
+* [x] Enforce idempotency
 
-  * [ ] Reruns replace or reinsert the same logical action rows
-  * [ ] No duplicate pricing actions for the same run
-* [ ] Validate stored records
+  * [x] Reruns replace or reinsert the same logical action rows
+  * [x] No duplicate pricing actions for the same run
+* [x] Validate stored records
 
-  * [ ] Confirm all required fields are populated
-  * [ ] Confirm JSON fields serialize correctly
-  * [ ] Confirm confidence and rationale values are present
+  * [x] Confirm all required fields are populated
+  * [x] Confirm JSON fields serialize correctly
+  * [x] Confirm confidence and rationale values are present
 
 ### Feature 3.9 — Phase 3 validation and exit criteria
 
-* [ ] Add model training and scoring tests
-* [ ] Add optimizer rule tests
-* [ ] Add rationale generation tests
-* [ ] Add exploration determinism tests
-* [ ] Run a full scenario and inspect pricing actions
-* [ ] Verify the following before closing Phase 3
+* [x] Add model training and scoring tests
+* [x] Add optimizer rule tests
+* [x] Add rationale generation tests
+* [x] Add exploration determinism tests
+* [x] Run a full scenario and inspect pricing actions
+* [x] Verify the following before closing Phase 3
 
-  * [ ] Scoring outputs are generated
-  * [ ] Business calibration works
-  * [ ] Eligible action sets are correct
-  * [ ] Discount recommendations are written
-  * [ ] Rationale codes and exploration metadata are present
-  * [ ] Reruns remain idempotent
+  * [x] Scoring outputs are generated
+  * [x] Business calibration works
+  * [x] Eligible action sets are correct
+  * [x] Discount recommendations are written
+  * [x] Rationale codes and exploration metadata are present
+  * [x] Reruns remain idempotent
 
 ---
 

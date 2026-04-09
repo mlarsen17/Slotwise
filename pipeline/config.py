@@ -28,6 +28,20 @@ class UnderbookingSettings(BaseModel):
     sparse_baseline_fill_rate: float = 0.6
 
 
+class ScoringSettings(BaseModel):
+    training_min_rows: int = 10
+    l2_c: float = 1.0
+
+
+class OptimizerSettings(BaseModel):
+    excluded_services: list[str] = Field(default_factory=list)
+    price_floor_pct: float = 0.7
+    healthy_zero_only: bool = True
+    severity_breakpoints: list[float] = Field(default_factory=lambda: [0.2, 0.4, 0.7])
+    discount_steps: list[int] = Field(default_factory=lambda: [5, 10, 15, 20])
+    exploration_share: float = 0.1
+
+
 class ScenarioSettings(BaseModel):
     business_count: int = 2
     providers_per_business: int = 2
@@ -53,6 +67,8 @@ class AppConfig(BaseModel):
     scenario: ScenarioSettings
     time_of_day_buckets: TimeOfDayBuckets = Field(default_factory=TimeOfDayBuckets)
     underbooking: UnderbookingSettings = Field(default_factory=UnderbookingSettings)
+    scoring: ScoringSettings = Field(default_factory=ScoringSettings)
+    optimizer: OptimizerSettings = Field(default_factory=OptimizerSettings)
 
     @field_validator("duckdb_path", mode="before")
     @classmethod
@@ -79,7 +95,8 @@ class AppConfig(BaseModel):
             f"{self.effective_ts.isoformat()}|{self.action_ladder}|"
             f"{self.lead_time_windows_hours}|{self.global_discount_limits.model_dump()}|"
             f"{self.scenario.model_dump()}|{self.time_of_day_buckets.model_dump()}|"
-            f"{self.underbooking.model_dump()}"
+            f"{self.underbooking.model_dump()}|{self.scoring.model_dump()}|"
+            f"{self.optimizer.model_dump()}"
         )
         return hashlib.sha256(base.encode()).hexdigest()[:16]
 
@@ -88,7 +105,7 @@ class AppConfig(BaseModel):
         return f"fsv_{ts}"
 
     def model_version(self) -> str:
-        return "model_v0"
+        return "model_v1_pooled_logistic"
 
 
 def load_config(path: str | Path = "config/default.yaml") -> AppConfig:
