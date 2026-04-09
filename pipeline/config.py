@@ -34,6 +34,7 @@ class AppConfig(BaseModel):
     scenario_id: str
     source_run_id: str
     random_seed: int
+    run_id: str | None = None
     effective_ts: datetime
     action_ladder: list[int]
     lead_time_windows_hours: list[int]
@@ -52,10 +53,21 @@ class AppConfig(BaseModel):
             return value.astimezone(timezone.utc)
         return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
 
-    def run_id(self) -> str:
+    def resolved_run_id(self) -> str:
+        if self.run_id:
+            return self.run_id
         base = f"{self.scenario_id}:{self.effective_ts.isoformat()}:{self.random_seed}"
         digest = hashlib.sha256(base.encode()).hexdigest()[:12]
         return f"run_{digest}"
+
+    def config_hash(self) -> str:
+        base = (
+            f"{self.scenario_id}|{self.source_run_id}|{self.random_seed}|"
+            f"{self.effective_ts.isoformat()}|{self.action_ladder}|"
+            f"{self.lead_time_windows_hours}|{self.global_discount_limits.model_dump()}|"
+            f"{self.scenario.model_dump()}"
+        )
+        return hashlib.sha256(base.encode()).hexdigest()[:16]
 
     def feature_snapshot_version(self) -> str:
         ts = self.effective_ts.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -75,7 +87,7 @@ def load_config(path: str | Path = "config/default.yaml") -> AppConfig:
     LOGGER.info(
         "Loaded config scenario=%s run_id=%s duckdb=%s",
         cfg.scenario_id,
-        cfg.run_id(),
+        cfg.resolved_run_id(),
         cfg.duckdb_path,
     )
     return cfg

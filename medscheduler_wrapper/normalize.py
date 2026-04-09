@@ -11,7 +11,7 @@ def stable_id(prefix: str, *parts: str) -> str:
 
 
 def normalize_records(
-    raw: dict[str, pd.DataFrame], scenario_id: str, source_run_id: str
+    raw: dict[str, pd.DataFrame], scenario_id: str, source_run_id: str, *, run_id: str
 ) -> dict[str, pd.DataFrame]:
     businesses = raw["businesses"].copy()
     businesses["business_id"] = businesses["source_business_id"].map(
@@ -73,6 +73,13 @@ def normalize_records(
     slots["source_system"] = "medscheduler"
     slots["source_run_id"] = source_run_id
     slots["scenario_id"] = scenario_id
+    slots["run_id"] = run_id
+    slots["integration_id"] = "medscheduler"
+    slots["external_slot_id"] = slots["source_slot_id"]
+    slots["standard_price"] = 100.0
+    slots["slot_duration_minutes"] = (
+        pd.to_datetime(slots["slot_end_at"]) - pd.to_datetime(slots["slot_start_at"])
+    ).dt.total_seconds() // 60
 
     events = raw["booking_events"].copy()
     if events.empty:
@@ -89,6 +96,16 @@ def normalize_records(
     events["source_system"] = "medscheduler"
     events["source_run_id"] = source_run_id
     events["scenario_id"] = scenario_id
+    events["run_id"] = run_id
+    events["business_id"] = events["slot_id"].map(
+        slots.set_index("slot_id")["business_id"].to_dict()
+    )
+    events["provider_id"] = events["slot_id"].map(
+        slots.set_index("slot_id")["provider_id"].to_dict()
+    )
+    events["service_type"] = events["slot_id"].map(
+        slots.set_index("slot_id")["service_id"].to_dict()
+    )
 
     return {
         "businesses": businesses,

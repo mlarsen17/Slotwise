@@ -6,7 +6,7 @@ from medscheduler_wrapper.scenario_config import ScenarioConfig
 from pipeline.config import AppConfig
 
 
-def run_extract(cfg: AppConfig) -> dict:
+def run_extract(cfg: AppConfig, *, run_id: str) -> dict:
     scenario = ScenarioConfig(
         scenario_id=cfg.scenario_id,
         source_run_id=cfg.source_run_id,
@@ -23,4 +23,4 @@ def run_extract(cfg: AppConfig) -> dict:
         removal_rate=cfg.scenario.removal_rate,
     )
     raw = extract_synthetic_data(scenario)
-    return normalize_records(raw, cfg.scenario_id, cfg.source_run_id)
+    return normalize_records(raw, cfg.scenario_id, cfg.source_run_id, run_id=run_id)

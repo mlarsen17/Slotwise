@@ -92,6 +92,12 @@ A stage must be safe to rerun with the same inputs and config without duplicatin
 ### 5. Design for future extension without overbuilding
 Represent recommendations as **generic actions** rather than hardcoding discount-only semantics everywhere, because future incentive types may be added later. :contentReference[oaicite:10]{index=10} :contentReference[oaicite:11]{index=11}
 
+### 6. Required local validation checks
+Before considering implementation work complete, agents must run all of the following checks:
+- `pytest`
+- `ruff check .`
+- `black --check .`
+
 ---
 
 ## Expected codebase shape

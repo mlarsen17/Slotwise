@@ -189,227 +189,227 @@ Below is a detailed implementation checklist designed for an AI agent to execute
 
 Stabilize the Phase 1 foundation to ensure:
 
-* [ ] fully deterministic pipeline runs
-* [ ] strong idempotency guarantees
-* [ ] production-grade schema evolution readiness
-* [ ] reliable downstream feature computation
+* [x] fully deterministic pipeline runs
+* [x] strong idempotency guarantees
+* [x] production-grade schema evolution readiness
+* [x] reliable downstream feature computation
 
 This phase does not introduce new product capabilities. It makes the existing pipeline correct, reproducible, and extensible.
 
 ### Feature 1.1.1 — Deterministic time handling
 
-* [ ] Eliminate dependence on wall-clock time
+* [x] Eliminate dependence on wall-clock time
 
-  * [ ] Introduce a single source of time truth
-  * [ ] Use `cfg.effective_ts` as the canonical pipeline timestamp
-  * [ ] Parse it once and pass it to all stages
-* [ ] Remove implicit system time usage
+  * [x] Introduce a single source of time truth
+  * [x] Use `cfg.effective_ts` as the canonical pipeline timestamp
+  * [x] Parse it once and pass it to all stages
+* [x] Remove implicit system time usage
 
-  * [ ] Remove `CURRENT_TIMESTAMP` in SQL
-  * [ ] Remove `datetime.now()` or equivalent in Python
-* [ ] Update availability logic
+  * [x] Remove `CURRENT_TIMESTAMP` in SQL
+  * [x] Remove `datetime.now()` or equivalent in Python
+* [x] Update availability logic
 
-  * [ ] Replace `CURRENT_TIMESTAMP` with `cfg.effective_ts`
-  * [ ] Pass `effective_ts` explicitly into `apply_availability()`
-* [ ] Enforce deterministic feature computation
+  * [x] Replace `CURRENT_TIMESTAMP` with `cfg.effective_ts`
+  * [x] Pass `effective_ts` explicitly into `apply_availability()`
+* [x] Enforce deterministic feature computation
 
-  * [ ] Any lead-time or time-until-slot calculation must use `effective_ts`
-  * [ ] No implicit system time usage is allowed
-* [ ] Add validation test
+  * [x] Any lead-time or time-until-slot calculation must use `effective_ts`
+  * [x] No implicit system time usage is allowed
+* [x] Add validation test
 
-  * [ ] Running pipeline twice with identical config produces identical outputs
+  * [x] Running pipeline twice with identical config produces identical outputs
 
 ### Feature 1.1.2 — Transactional load stage
 
-* [ ] Guarantee atomic DuckDB writes
+* [x] Guarantee atomic DuckDB writes
 
-  * [ ] Wrap load stage in a transaction
-  * [ ] Use `BEGIN TRANSACTION`
-  * [ ] Execute all deletes and inserts
-  * [ ] `COMMIT` on success
-  * [ ] `ROLLBACK` on failure
-* [ ] Ensure failure safety
+  * [x] Wrap load stage in a transaction
+  * [x] Use `BEGIN TRANSACTION`
+  * [x] Execute all deletes and inserts
+  * [x] `COMMIT` on success
+  * [x] `ROLLBACK` on failure
+* [x] Ensure failure safety
 
-  * [ ] If any insert fails, no tables are partially updated
-  * [ ] Scenario data remains consistent
-* [ ] Add test
+  * [x] If any insert fails, no tables are partially updated
+  * [x] Scenario data remains consistent
+* [x] Add test
 
-  * [ ] Simulate failure mid-load and verify no partial writes
+  * [x] Simulate failure mid-load and verify no partial writes
 
 ### Feature 1.1.3 — Run identity and versioning
 
-* [ ] Make pipeline executions identifiable and comparable
+* [x] Make pipeline executions identifiable and comparable
 
-  * [ ] Promote `run_id` to a first-class concept
-  * [ ] Generate deterministic or user-provided `run_id`
-  * [ ] Pass `run_id` through all stages
-* [ ] Persist run metadata
+  * [x] Promote `run_id` to a first-class concept
+  * [x] Generate deterministic or user-provided `run_id`
+  * [x] Pass `run_id` through all stages
+* [x] Persist run metadata
 
-  * [ ] Add `run_id` column to `slots`
-  * [ ] Add `run_id` column to `booking_events`
-  * [ ] Add `run_id` column to `pricing_actions`
-  * [ ] Optionally introduce `pipeline_runs` table
-* [ ] Update load semantics
+  * [x] Add `run_id` column to `slots`
+  * [x] Add `run_id` column to `booking_events`
+  * [x] Add `run_id` column to `pricing_actions`
+  * [x] Optionally introduce `pipeline_runs` table
+* [x] Update load semantics
 
-  * [ ] Scope deletes by `run_id` + `scenario_id`
-  * [ ] Allow multiple runs of the same scenario to coexist
-* [ ] Add reproducibility fields
+  * [x] Scope deletes by `run_id` + `scenario_id`
+  * [x] Allow multiple runs of the same scenario to coexist
+* [x] Add reproducibility fields
 
-  * [ ] Add `effective_ts`
-  * [ ] Add optional `config_hash`
-* [ ] Add test
+  * [x] Add `effective_ts`
+  * [x] Add optional `config_hash`
+* [x] Add test
 
-  * [ ] Multiple runs of same scenario do not overwrite each other
-  * [ ] Results are queryable by `run_id`
+  * [x] Multiple runs of same scenario do not overwrite each other
+  * [x] Results are queryable by `run_id`
 
 ### Feature 1.1.4 — Schema expansion (forward-compatible core tables)
 
-* [ ] Expand `slots` schema
+* [x] Expand `slots` schema
 
-  * [ ] Add `standard_price`
-  * [ ] Add `slot_duration_minutes`
-  * [ ] Add `integration_id`
-  * [ ] Add `external_slot_id`
-* [ ] Expand `booking_events` schema
+  * [x] Add `standard_price`
+  * [x] Add `slot_duration_minutes`
+  * [x] Add `integration_id`
+  * [x] Add `external_slot_id`
+* [x] Expand `booking_events` schema
 
-  * [ ] Add `business_id`
-  * [ ] Add `provider_id`
-  * [ ] Add `service_type`
-* [ ] Expand `pricing_actions` schema
+  * [x] Add `business_id`
+  * [x] Add `provider_id`
+  * [x] Add `service_type`
+* [x] Expand `pricing_actions` schema
 
-  * [ ] Add `eligible_action_set`
-  * [ ] Add `decision_reason`
-  * [ ] Add `was_exploration`
-  * [ ] Add `exploration_policy`
-  * [ ] Add `decision_timestamp`
-  * [ ] Add `feature_snapshot_version`
-  * [ ] Add `confidence_score`
-  * [ ] Add `rationale_codes`
-* [ ] Ensure backward compatibility
+  * [x] Add `eligible_action_set`
+  * [x] Add `decision_reason`
+  * [x] Add `was_exploration`
+  * [x] Add `exploration_policy`
+  * [x] Add `decision_timestamp`
+  * [x] Add `feature_snapshot_version`
+  * [x] Add `confidence_score`
+  * [x] Add `rationale_codes`
+* [x] Ensure backward compatibility
 
-  * [ ] Allow default values for Phase 1 outputs
-* [ ] Add migration logic
+  * [x] Allow default values for Phase 1 outputs
+* [x] Add migration logic
 
-  * [ ] Use a safe table rebuild or `ALTER TABLE` strategy
+  * [x] Use a safe table rebuild or `ALTER TABLE` strategy
 
 ### Feature 1.1.5 — Strong schema validation
 
-* [ ] Enforce strict extraction-normalization-load contracts
+* [x] Enforce strict extraction-normalization-load contracts
 
-  * [ ] Define explicit schema for `slots` dataframe
-  * [ ] Define explicit schema for `booking_events` dataframe
-* [ ] Validate structure and types
+  * [x] Define explicit schema for `slots` dataframe
+  * [x] Define explicit schema for `booking_events` dataframe
+* [x] Validate structure and types
 
-  * [ ] Required columns exist
-  * [ ] No unexpected columns in optional strict mode
-  * [ ] Data types are correct
-  * [ ] Timestamps are valid and parseable
-  * [ ] Required fields are non-null
-* [ ] Validate event types
+  * [x] Required columns exist
+  * [x] No unexpected columns in optional strict mode
+  * [x] Data types are correct
+  * [x] Timestamps are valid and parseable
+  * [x] Required fields are non-null
+* [x] Validate event types
 
-  * [ ] Enforce allowed enum set
-* [ ] Improve error handling
+  * [x] Enforce allowed enum set
+* [x] Improve error handling
 
-  * [ ] Raise descriptive validation errors instead of `KeyError`
-* [ ] Add test
+  * [x] Raise descriptive validation errors instead of `KeyError`
+* [x] Add test
 
-  * [ ] Invalid schema fails fast with clear message
+  * [x] Invalid schema fails fast with clear message
 
 ### Feature 1.1.6 — Slot lifecycle and availability semantics
 
-* [ ] Define canonical slot lifecycle states
+* [x] Define canonical slot lifecycle states
 
-  * [ ] `open`
-  * [ ] `booked`
-  * [ ] `canceled`
-  * [ ] `expired`
-  * [ ] `removed`
-* [ ] Clarify cancellation behavior
+  * [x] `open`
+  * [x] `booked`
+  * [x] `canceled`
+  * [x] `expired`
+  * [x] `removed`
+* [x] Clarify cancellation behavior
 
-  * [ ] Explicitly decide whether canceled slots remain unavailable or reopen inventory
-* [ ] Align lifecycle-derived fields
+  * [x] Explicitly decide whether canceled slots remain unavailable or reopen inventory
+* [x] Align lifecycle-derived fields
 
-  * [ ] `current_status` reflects final state
-  * [ ] `unavailable_at` aligns with lifecycle decision
-* [ ] Document lifecycle rules
+  * [x] `current_status` reflects final state
+  * [x] `unavailable_at` aligns with lifecycle decision
+* [x] Document lifecycle rules
 
-  * [ ] Define how `unavailable_at` is derived
-  * [ ] Define precedence rules between events
-* [ ] Add lifecycle tests
+  * [x] Define how `unavailable_at` is derived
+  * [x] Define precedence rules between events
+* [x] Add lifecycle tests
 
-  * [ ] `book` → `cancel` transition correctness
-  * [ ] `no event` → expiration behavior
-  * [ ] `removed` precedence behavior
+  * [x] `book` → `cancel` transition correctness
+  * [x] `no event` → expiration behavior
+  * [x] `removed` precedence behavior
 
 ### Feature 1.1.7 — Expanded event model
 
-* [ ] Extend allowed event types
+* [x] Extend allowed event types
 
-  * [ ] `booked`
-  * [ ] `canceled`
-  * [ ] `removed`
-  * [ ] `completed`
-  * [ ] `no_show`
-  * [ ] `rescheduled`
-* [ ] Update normalization
+  * [x] `booked`
+  * [x] `canceled`
+  * [x] `removed`
+  * [x] `completed`
+  * [x] `no_show`
+  * [x] `rescheduled`
+* [x] Update normalization
 
-  * [ ] Accept and map new event types
-  * [ ] Maintain backward compatibility
-* [ ] Update integrity checks
+  * [x] Accept and map new event types
+  * [x] Maintain backward compatibility
+* [x] Update integrity checks
 
-  * [ ] Validate event sequences where applicable
-* [ ] Add test
+  * [x] Validate event sequences where applicable
+* [x] Add test
 
-  * [ ] Pipeline handles extended events without failure
+  * [x] Pipeline handles extended events without failure
 
 ### Feature 1.1.8 — Pipeline observability
 
-* [ ] Add structured logging per stage
+* [x] Add structured logging per stage
 
-  * [ ] Stage name
-  * [ ] `run_id`
-  * [ ] `scenario_id`
-  * [ ] Input row counts
-  * [ ] Output row counts
-  * [ ] Execution time
-* [ ] Log failures with stage context
+  * [x] Stage name
+  * [x] `run_id`
+  * [x] `scenario_id`
+  * [x] Input row counts
+  * [x] Output row counts
+  * [x] Execution time
+* [x] Log failures with stage context
 
-  * [ ] Clear stage context
-  * [ ] Root cause
-* [ ] Optional persistence
+  * [x] Clear stage context
+  * [x] Root cause
+* [x] Optional persistence
 
-  * [ ] Persist run summary table
+  * [x] Persist run summary table
 
 ### Feature 1.1.9 — Test coverage expansion
 
-* [ ] Add determinism test
+* [x] Add determinism test
 
-  * [ ] Same config produces identical outputs
-* [ ] Add transaction test
+  * [x] Same config produces identical outputs
+* [x] Add transaction test
 
-  * [ ] Simulated failure produces no partial writes
-* [ ] Add run isolation test
+  * [x] Simulated failure produces no partial writes
+* [x] Add run isolation test
 
-  * [ ] Multiple `run_id` values coexist
-* [ ] Add lifecycle test
+  * [x] Multiple `run_id` values coexist
+* [x] Add lifecycle test
 
-  * [ ] Cancellation and expiration correctness
-* [ ] Add schema validation test
+  * [x] Cancellation and expiration correctness
+* [x] Add schema validation test
 
-  * [ ] Missing or invalid columns fail fast
+  * [x] Missing or invalid columns fail fast
 
 ### Feature 1.1.10 — Phase 1.1 validation and exit criteria
 
-* [ ] Verify the following before closing Phase 1.1
+* [x] Verify the following before closing Phase 1.1
 
-  * [ ] Pipeline runs are fully deterministic for identical config
-  * [ ] No stage depends on wall-clock time
-  * [ ] Load stage is atomic and failure-safe
-  * [ ] Core schemas support Phase 2 and Phase 3 requirements without redesign
-  * [ ] Slot lifecycle semantics are explicit and consistent
-  * [ ] Extended event types are supported
-  * [ ] Pipeline execution is observable and debuggable
-  * [ ] Test suite covers determinism, failure safety, and lifecycle correctness
+  * [x] Pipeline runs are fully deterministic for identical config
+  * [x] No stage depends on wall-clock time
+  * [x] Load stage is atomic and failure-safe
+  * [x] Core schemas support Phase 2 and Phase 3 requirements without redesign
+  * [x] Slot lifecycle semantics are explicit and consistent
+  * [x] Extended event types are supported
+  * [x] Pipeline execution is observable and debuggable
+  * [x] Test suite covers determinism, failure safety, and lifecycle correctness
 
 ---
 
