@@ -57,6 +57,17 @@ python -c "from pipeline.run_pipeline import run; run('path/to/config.yaml')"
 
 Default outputs are written to `data/mvp.duckdb`.
 
+
+## Run the weekly appointments UI
+
+After generating pipeline data, launch the Streamlit dashboard:
+
+```bash
+streamlit run app/streamlit_app.py
+```
+
+The dashboard lets you select a scenario, run, and week, then shows appointment counts and the average full rate for that week.
+
 ## Slot availability semantics (Phase 1)
 
 `pipeline.stages.availability_stage.apply_availability` computes `unavailable_at` and `current_status` per slot using booking lifecycle events.
