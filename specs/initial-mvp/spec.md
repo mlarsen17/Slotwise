@@ -1283,6 +1283,259 @@ This phase is not about expanding scope. It is about making Phase 3 real, stable
 
 ---
 
+## Phase 3.2 — Scoring Validity, Auditability, and Recommendation Semantics
+
+### Goal
+
+Tighten the now-runnable Phase 3 stack so it is not only operational, but also methodologically sound and auditable by:
+
+* [ ] removing label and time leakage from scoring
+* [ ] making pipeline run records truly auditable
+* [ ] aligning optimizer and rationale semantics with actual config and slot context
+* [ ] eliminating misleading or unused configuration and output semantics
+* [ ] ensuring documentation reflects the real repository state
+
+This phase is a quality and trustworthiness phase. It does not expand the product surface. It makes the existing recommendation engine more correct, more explainable, and easier to operate.
+
+### Feature 3.2.1 — Pipeline run auditability and terminal state correctness
+
+* [ ] Replace destructive `pipeline_runs` rewrite behavior
+
+  * [ ] Stop deleting and reinserting the same logical run record on status changes
+  * [ ] Insert the run record once at run start
+  * [ ] Update the existing record in place on terminal state transition
+* [ ] Record real execution timestamps
+
+  * [ ] Set `started_at` from wall-clock execution start time, not `effective_ts`
+  * [ ] Add `ended_at` column to `pipeline_runs`
+  * [ ] Add optional `duration_ms` or derive it consistently
+* [ ] Improve terminal-state observability
+
+  * [ ] Persist terminal status
+  * [ ] Persist failure message or failure class when a run fails
+  * [ ] Preserve run metadata across success and failure paths
+* [ ] Validate audit semantics
+
+  * [ ] A successful run preserves its original start metadata
+  * [ ] A failed run preserves its original start metadata
+  * [ ] Terminal updates do not create duplicate logical run records
+  * [ ] `pipeline_runs` can answer “when did this run start, end, and how did it fail?”
+
+### Feature 3.2.2 — Snapshot-safe scoring training semantics
+
+* [ ] Remove future-outcome leakage from scoring labels
+
+  * [ ] Define the scoring label explicitly as of the training snapshot
+  * [ ] Do not train on outcomes that occur after the decision point for a row
+  * [ ] Do not let future booking or completion events leak into current-slot labels
+* [ ] Separate training eligibility from scoring eligibility
+
+  * [ ] Train only on slots whose outcome is knowable under the chosen label definition
+  * [ ] Score only slots that are open and decision-eligible at `effective_ts`
+  * [ ] Document the distinction clearly in code comments and tests
+* [ ] Introduce an explicit training cutoff rule
+
+  * [ ] Filter training rows by slot start time and/or completed outcome window
+  * [ ] Ensure labels are derived only from information that would be available historically
+  * [ ] Avoid training and scoring on the same unresolved future population
+* [ ] Validate no-leakage semantics
+
+  * [ ] Add a test where a future booking event exists after `effective_ts` and assert it does not influence the current snapshot label
+  * [ ] Add a test where unresolved future slots are excluded from training
+  * [ ] Add a test proving scoring still runs when valid historical training rows are sparse
+
+### Feature 3.2.3 — Scoring configuration honesty and minimum-data guardrails
+
+* [ ] Reconcile config with implementation
+
+  * [ ] Either wire `scoring.training_min_rows` into the scoring stage
+  * [ ] Or remove the config field if it is not intended to be active
+* [ ] Add minimum-data behavior
+
+  * [ ] If training rows are below threshold, use an explicit fallback model behavior
+  * [ ] Log that fallback behavior occurred
+  * [ ] Keep output semantics deterministic under fallback
+* [ ] Improve scoring-stage observability
+
+  * [ ] Log training row count
+  * [ ] Log positive-label rate
+  * [ ] Log whether fallback mode was used
+  * [ ] Log whether the model was actually trained or bypassed
+* [ ] Validate fallback behavior
+
+  * [ ] Add a test where training data is below the configured minimum
+  * [ ] Confirm scoring still writes outputs
+  * [ ] Confirm fallback probabilities are bounded and deterministic
+
+### Feature 3.2.4 — Model metadata and artifact semantics
+
+* [ ] Tighten model-version semantics
+
+  * [ ] Define what `model_version` represents
+  * [ ] Ensure it changes when model behavior or feature contract changes materially
+  * [ ] Avoid a static version string if behavior can drift underneath it
+* [ ] Persist richer scoring metadata
+
+  * [ ] Persist feature contract version or hash
+  * [ ] Persist training-row count
+  * [ ] Persist label definition identifier if practical
+  * [ ] Persist fallback-vs-trained mode indicator if practical
+* [ ] Clarify what is and is not persisted
+
+  * [ ] If no serialized model artifact is stored, document that clearly
+  * [ ] If model artifacts will remain in-memory only for MVP, state that explicitly
+* [ ] Validate metadata usefulness
+
+  * [ ] A reviewer should be able to tell how a scoring run was produced from DB state and logs
+  * [ ] A rerun with changed scoring semantics should be distinguishable from prior runs
+
+### Feature 3.2.5 — Lead-time window semantics in optimizer eligibility
+
+* [ ] Replace collapsed lead-time behavior with explicit policy
+
+  * [ ] Stop reducing `lead_time_windows_hours` to a single `max(...)` threshold unless that is the intentional product rule
+  * [ ] Define whether the config represents:
+    * [ ] allowed decision windows
+    * [ ] lead-time bands
+    * [ ] or discount-specific policy windows
+* [ ] Implement explicit lead-time semantics
+
+  * [ ] If using simple eligibility, rename config to reflect a single threshold
+  * [ ] If using bands, implement band-aware logic directly
+  * [ ] If using discount-specific windows, make the mapping explicit and tested
+* [ ] Document business meaning
+
+  * [ ] Explain what happens for a slot 6 hours out
+  * [ ] Explain what happens for a slot 36 hours out
+  * [ ] Explain what happens for a slot 8 days out
+* [ ] Validate window behavior
+
+  * [ ] Add tests covering each intended lead-time band or threshold boundary
+  * [ ] Confirm configured windows cannot silently degrade to a broader policy than intended
+
+### Feature 3.2.6 — Recommendation semantics and output naming consistency
+
+* [ ] Reconcile pricing-action field names with product language
+
+  * [ ] Decide whether stored output fields should remain generic action fields
+  * [ ] Or whether the persistence layer should align more closely to `recommended_action_type` / `recommended_action_value`
+* [ ] Make output semantics explicit
+
+  * [ ] Define whether `pricing_actions` stores the optimizer recommendation only
+  * [ ] Define whether it stores final chosen action after exploration
+  * [ ] Define whether `confidence` refers to scoring certainty, action certainty, or simply distance from `0.5`
+* [ ] Improve naming honesty
+
+  * [ ] Rename `confidence_score` if it is really a margin-from-indifference metric
+  * [ ] Or redefine it so “confidence” is an accurate description
+* [ ] Validate output clarity
+
+  * [ ] A downstream reader should be able to interpret each persisted field without reading implementation code
+  * [ ] Stored output names should not imply semantics the pipeline does not actually provide
+
+### Feature 3.2.7 — Rationale fidelity to actual slot context
+
+* [ ] Make rationale generation evidence-backed
+
+  * [ ] Only emit rationale codes that can be supported by actual row inputs
+  * [ ] Remove placeholder-like codes that are not grounded in passed context
+* [ ] Pass the right slot context into rationale generation
+
+  * [ ] Pass day-of-week or weekday bucket if rationale depends on it
+  * [ ] Pass time-of-day bucket if rationale depends on it
+  * [ ] Pass relevant baseline deviation signals if rationale claims they are present
+* [ ] Tighten taxonomy honesty
+
+  * [ ] Do not emit `historically_underbooked_weekday_afternoon` unless weekday and afternoon context are actually known and true
+  * [ ] Ensure “booking pace below baseline” is tied to an actual baseline-deviation signal
+  * [ ] Ensure “provider utilization below target” uses a documented threshold
+* [ ] Validate rationale fidelity
+
+  * [ ] Add tests that assert each rationale code maps to real feature conditions
+  * [ ] Add tests that prevent unsupported rationale codes from appearing
+  * [ ] Confirm rationale codes remain deterministic
+
+### Feature 3.2.8 — Calibration semantics and transparency cleanup
+
+* [ ] Make calibration intent explicit
+
+  * [ ] Document that the current business calibration is a bounded heuristic if that remains the chosen MVP approach
+  * [ ] Do not present it as formal probabilistic calibration unless it truly is
+* [ ] Improve calibration naming or comments
+
+  * [ ] Clarify what `calibration_factor` means
+  * [ ] Clarify why `business_fill_trend` is the adjustment signal
+  * [ ] Clarify why the clamp range is appropriate
+* [ ] Add validation around calibration output quality
+
+  * [ ] Confirm factors remain within configured bounds
+  * [ ] Confirm sparse-business fallback is well defined
+  * [ ] Confirm calibration does not introduce NaNs or silent null merges
+* [ ] Add tests for calibration semantics
+
+  * [ ] Multiple businesses with different trends produce different bounded factors
+  * [ ] Sparse or degenerate inputs still produce safe outputs
+
+### Feature 3.2.9 — Documentation and repo-status alignment
+
+* [ ] Update `README.md` to match implemented reality
+
+  * [ ] Stop describing scoring and optimization as placeholders if they are now implemented
+  * [ ] Reflect that the pipeline runner writes `scoring_outputs`, `business_calibrations`, `pricing_actions`, and `pipeline_runs`
+  * [ ] Describe current limitations honestly
+* [ ] Update spec completion markers honestly
+
+  * [ ] Re-open any Phase 3.1 items that are runnable but still methodologically incomplete
+  * [ ] Mark this Phase 3.2 work as the follow-on hardening phase
+* [ ] Improve contributor clarity
+
+  * [ ] A new engineer or AI agent should be able to distinguish:
+    * [ ] runnable today
+    * [ ] trustworthy today
+    * [ ] still heuristic or temporary
+* [ ] Validate documentation consistency
+
+  * [ ] `README`, spec, and code comments should not contradict one another about current project status
+
+### Feature 3.2.10 — Tests for methodological correctness
+
+* [ ] Add a dedicated test module for Phase 3.2 concerns
+* [ ] Add run-audit tests
+
+  * [ ] `pipeline_runs.started_at` is preserved across terminal status update
+  * [ ] `ended_at` is populated on success and failure
+  * [ ] failure metadata is recorded when a stage raises
+* [ ] Add scoring-validity tests
+
+  * [ ] no future-event leakage into labels
+  * [ ] unresolved future slots excluded from training
+  * [ ] minimum-row fallback behavior works
+* [ ] Add optimizer-semantics tests
+
+  * [ ] lead-time window config behaves exactly as documented
+  * [ ] final chosen action remains in `eligible_action_set`
+  * [ ] healthy-slot default behavior remains intact
+* [ ] Add rationale-fidelity tests
+
+  * [ ] rationale codes require supporting feature context
+  * [ ] unsupported rationale codes cannot appear
+* [ ] Add documentation-alignment checks where practical
+
+  * [ ] project status language updated alongside behavior changes
+
+### Feature 3.2.11 — Exit criteria
+
+* [ ] `pipeline_runs` is a true audit log for a pipeline execution, not just a status marker
+* [ ] Scoring labels and training rows are snapshot-safe and free of obvious future leakage
+* [ ] Unused or misleading scoring configuration has been removed or wired in correctly
+* [ ] Lead-time window behavior matches the documented product policy
+* [ ] Rationale codes are grounded in actual slot context
+* [ ] Output field names and metric names are honest about what they represent
+* [ ] `README` and spec match the current repository state
+* [ ] Phase 3 is not only runnable, but methodologically sound enough for Phase 4 evaluation and UI work
+
+---
+
 ## Phase 4 — Pipeline Runner, Analytics UI, and Evaluation Suite
 
 ### Feature 4.1 — Plain Python pipeline runner
