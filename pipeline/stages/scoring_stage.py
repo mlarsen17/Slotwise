@@ -1,34 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 import duckdb
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
 
+from models.calibration import build_business_calibration
+from models.demand_scoring import FEATURE_COLUMNS, predict_booking_probability, train_model
 from pipeline.stages.phase2_utils import clamp
-
-FEATURE_COLUMNS = [
-    "hours_until_slot",
-    "hist_fill_rate_similar",
-    "fill_rate_provider_service",
-    "fill_rate_business_service",
-    "expected_booking_pace_per_day",
-    "observed_booking_pace_per_day",
-    "pace_deviation",
-    "provider_utilization_7d",
-    "provider_utilization_14d",
-    "provider_utilization_28d",
-    "business_fill_trend",
-    "cohort_fill_rate",
-]
-
-
-@dataclass
-class _ModelBundle:
-    model: LogisticRegression | None
-    fallback_rate: float
 
 
 def _build_training_dataset(
@@ -68,20 +46,6 @@ def _build_training_dataset(
     return train.dropna(subset=FEATURE_COLUMNS)
 
 
-def _train_model(dataset: pd.DataFrame, *, l2_c: float) -> _ModelBundle:
-    if dataset.empty:
-        return _ModelBundle(model=None, fallback_rate=0.5)
-
-    y = dataset["label"].astype(int)
-    fallback = float(y.mean()) if len(y) else 0.5
-    if y.nunique() < 2:
-        return _ModelBundle(model=None, fallback_rate=fallback)
-
-    model = LogisticRegression(solver="liblinear", C=l2_c, random_state=0)
-    model.fit(dataset[FEATURE_COLUMNS], y)
-    return _ModelBundle(model=model, fallback_rate=fallback)
-
-
 def score_slots(
     conn: duckdb.DuckDBPyConnection,
     *,
@@ -97,7 +61,7 @@ def score_slots(
         run_id=run_id,
         feature_snapshot_version=feature_snapshot_version,
     )
-    bundle = _train_model(train, l2_c=l2_c)
+    bundle = train_model(train, l2_c=l2_c)
 
     scoring = conn.execute(
         """
@@ -130,25 +94,11 @@ def score_slots(
     if scoring.empty:
         output = pd.DataFrame()
     else:
-        if bundle.model is None:
-            booking_prob = np.repeat(bundle.fallback_rate, len(scoring))
-        else:
-            booking_prob = bundle.model.predict_proba(scoring[FEATURE_COLUMNS])[:, 1]
+        booking_prob = predict_booking_probability(bundle, scoring)
 
         scoring["booking_probability"] = np.clip(booking_prob, 0.0, 1.0)
 
-        calibration = (
-            scoring.groupby("business_id")["business_fill_trend"]
-            .mean()
-            .rename("local_fill")
-            .reset_index()
-        )
-        global_fill = float(scoring["business_fill_trend"].mean()) if len(scoring) else 0.5
-        if global_fill <= 0:
-            global_fill = 0.5
-        calibration["calibration_factor"] = calibration["local_fill"].apply(
-            lambda x: clamp(float(x) / global_fill, 0.8, 1.2)
-        )
+        calibration = build_business_calibration(scoring)
 
         conn.execute(
             "DELETE FROM business_calibrations WHERE scenario_id = ? AND run_id = ? AND feature_snapshot_version = ?",

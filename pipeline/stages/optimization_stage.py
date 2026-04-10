@@ -2,23 +2,15 @@ from __future__ import annotations
 
 import hashlib
 import json
-import random
 from datetime import datetime
 
 import duckdb
 import pandas as pd
 
-
-def _deterministic_rng(seed: int, *parts: str) -> random.Random:
-    digest = hashlib.sha256(f"{seed}|{'|'.join(parts)}".encode()).hexdigest()[:16]
-    return random.Random(int(digest, 16))
-
-
-def _discount_from_severity(severity: float, breakpoints: list[float], discounts: list[int]) -> int:
-    for idx, threshold in enumerate(breakpoints):
-        if severity <= threshold:
-            return discounts[idx]
-    return discounts[-1]
+from optimizer.eligibility import build_eligible_action_set
+from optimizer.exploration import maybe_apply_exploration
+from optimizer.rationale import generate_rationale_codes
+from optimizer.recommend import select_discount
 
 
 def recommend_pricing_actions(
@@ -39,6 +31,9 @@ def recommend_pricing_actions(
     discount_steps: list[int],
     exploration_share: float,
 ) -> pd.DataFrame:
+    if not 0.0 <= exploration_share <= 1.0:
+        raise ValueError("exploration_share must be in [0, 1]")
+
     df = conn.execute(
         """
         SELECT s.slot_id, s.business_id, s.provider_id, s.service_id, s.standard_price, s.slot_start_at,
@@ -84,22 +79,16 @@ def recommend_pricing_actions(
 
         records: list[dict] = []
         for _, row in df.iterrows():
-            ladder = sorted(set(int(v) for v in action_ladder if 0 <= int(v) <= max_discount_pct))
-            if 0 not in ladder:
-                ladder.insert(0, 0)
-
-            eligible = []
-            for discount in ladder:
-                if row["service_id"] in excluded_services and discount > 0:
-                    continue
-                if row["hours_until_slot"] > allowed_lead_time and discount > 0:
-                    continue
-                implied_price = float(row["standard_price"]) * (1 - discount / 100.0)
-                if implied_price < float(row["standard_price"]) * floor_multiplier:
-                    continue
-                eligible.append(discount)
-            if not eligible:
-                eligible = [0]
+            eligible = build_eligible_action_set(
+                action_ladder=action_ladder,
+                max_discount_pct=max_discount_pct,
+                service_id=str(row["service_id"]),
+                excluded_services=excluded_services,
+                hours_until_slot=float(row["hours_until_slot"]),
+                allowed_lead_time=allowed_lead_time,
+                standard_price=float(row["standard_price"]),
+                floor_multiplier=floor_multiplier,
+            )
 
             underbooked = bool(row["underbooked"]) if pd.notna(row["underbooked"]) else False
             severity = float(
@@ -107,38 +96,29 @@ def recommend_pricing_actions(
                 if pd.notna(row["shortfall_score"])
                 else row["severity_score"] or 0.0
             )
-            target = (
-                0
-                if (healthy_zero_only and not underbooked)
-                else _discount_from_severity(
-                    severity,
-                    breakpoints=severity_breakpoints,
-                    discounts=discount_steps,
-                )
+            chosen = select_discount(
+                underbooked=underbooked,
+                healthy_zero_only=healthy_zero_only,
+                severity=severity,
+                breakpoints=severity_breakpoints,
+                discounts=discount_steps,
+                eligible_actions=eligible,
             )
-            chosen = max([v for v in eligible if v <= target], default=min(eligible))
-            reason = "underbooked_optimizer" if underbooked else "healthy_no_discount"
-            was_exploration = False
-            policy = "none"
-
-            rng = _deterministic_rng(random_seed, run_id, str(row["slot_id"]))
-            if underbooked and len(eligible) > 1 and rng.random() < exploration_share:
-                chosen = rng.choice([x for x in eligible if x != chosen] or eligible)
-                was_exploration = True
-                policy = "epsilon_greedy_deterministic"
-                reason = "exploration_override"
-
-            rationale = []
-            if underbooked:
-                rationale.append("booking_pace_below_baseline")
-            if float(row["hours_until_slot"]) <= 24 and underbooked:
-                rationale.append("short_lead_time_low_fill")
-            if float(row["provider_utilization_7d"] or 0.0) < 0.5 and underbooked:
-                rationale.append("provider_utilization_below_target")
-            if not rationale and chosen > 0:
-                rationale.append("historically_underbooked_weekday_afternoon")
-            if not rationale:
-                rationale.append("healthy_slot_no_discount")
+            chosen, was_exploration, policy, reason = maybe_apply_exploration(
+                random_seed=random_seed,
+                run_id=run_id,
+                slot_id=str(row["slot_id"]),
+                exploration_share=exploration_share,
+                underbooked=underbooked,
+                chosen_discount=chosen,
+                eligible_actions=eligible,
+            )
+            rationale = generate_rationale_codes(
+                underbooked=underbooked,
+                hours_until_slot=float(row["hours_until_slot"]),
+                provider_utilization_7d=float(row["provider_utilization_7d"] or 0.0),
+                chosen_discount=int(chosen),
+            )
 
             action_id = hashlib.sha256(
                 f"{run_id}|{feature_snapshot_version}|{row['slot_id']}".encode()

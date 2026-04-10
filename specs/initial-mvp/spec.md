@@ -983,54 +983,54 @@ Tighten Phase 2 so the feature layer is trustworthy for downstream scoring and o
 
 Close the gap between the intended Phase 3 design and the current repository state by:
 
-* [ ] wiring the scoring and optimization stack into the real pipeline runner
-* [ ] fixing current runner-breaking issues
-* [ ] hardening persistence and failure semantics
-* [ ] replacing Phase 3 placeholders with fully operational recommendation outputs
-* [ ] adding end-to-end tests that validate the actual runnable system
+* [x] wiring the scoring and optimization stack into the real pipeline runner
+* [x] fixing current runner-breaking issues
+* [x] hardening persistence and failure semantics
+* [x] replacing Phase 3 placeholders with fully operational recommendation outputs
+* [x] adding end-to-end tests that validate the actual runnable system
 
 This phase is not about expanding scope. It is about making Phase 3 real, stable, and trustworthy in the main execution path. The need for this phase follows from the current repo state: the spec says Phase 3 is complete, but the pipeline runner and project status do not yet reflect a finished scoring and recommendation flow.
 
 ### Feature 3.1.1 — Runner correctness and stage wiring
 
-* [ ] Fix the current underbooking runner call
+* [x] Fix the current underbooking runner call
 
-  * [ ] Update `run_pipeline.py` to pass `sparse_baseline_fill_rate` into `detect_underbooking()`
-  * [ ] Verify the value is sourced from `cfg.underbooking.sparse_baseline_fill_rate`
-  * [ ] Confirm the pipeline no longer fails with a missing-argument error
+  * [x] Update `run_pipeline.py` to pass `sparse_baseline_fill_rate` into `detect_underbooking()`
+  * [x] Verify the value is sourced from `cfg.underbooking.sparse_baseline_fill_rate`
+  * [x] Confirm the pipeline no longer fails with a missing-argument error
 * [ ] Audit runner stage order
 
-  * [ ] Confirm extraction runs before load
-  * [ ] Confirm availability runs before baselines and features
-  * [ ] Confirm underbooking runs after feature materialization
-  * [ ] Insert scoring stage after underbooking
-  * [ ] Insert calibration stage after scoring
-  * [ ] Insert optimization stage after calibration
-  * [ ] Insert pricing action persistence after optimization
+  * [x] Confirm extraction runs before load
+  * [x] Confirm availability runs before baselines and features
+  * [x] Confirm underbooking runs after feature materialization
+  * [x] Insert scoring stage after underbooking
+  * [x] Insert calibration stage after scoring
+  * [x] Insert optimization stage after calibration
+  * [x] Insert pricing action persistence after optimization
 * [ ] Standardize runner stage contracts
 
-  * [ ] Each stage should accept explicit inputs
-  * [ ] Each stage should return a deterministic summary or dataframe where appropriate
-  * [ ] Each stage should log row counts and output location
-* [ ] Validate full runner path
+  * [x] Each stage should accept explicit inputs
+  * [x] Each stage should return a deterministic summary or dataframe where appropriate
+  * [x] Each stage should log row counts and output location
+* [x] Validate full runner path
 
-  * [ ] Confirm a full pipeline run reaches pricing action outputs
-  * [ ] Confirm no Phase 3 logic is “implemented” only in isolated modules or tests
+  * [x] Confirm a full pipeline run reaches pricing action outputs
+  * [x] Confirm no Phase 3 logic is “implemented” only in isolated modules or tests
 
 ### Feature 3.1.2 — Phase 3 module implementation alignment
 
-* [ ] Reconcile repo structure with Phase 3 requirements
+* [x] Reconcile repo structure with Phase 3 requirements
 
-  * [ ] Confirm `models/` contains actual scoring implementation
-  * [ ] Confirm `optimizer/` contains actual eligibility, recommendation, rationale, and exploration modules
-  * [ ] Remove empty placeholder files or replace them with working code
-* [ ] Make module boundaries explicit
+  * [x] Confirm `models/` contains actual scoring implementation
+  * [x] Confirm `optimizer/` contains actual eligibility, recommendation, rationale, and exploration modules
+  * [x] Remove empty placeholder files or replace them with working code
+* [x] Make module boundaries explicit
 
-  * [ ] Define scoring entrypoint
-  * [ ] Define calibration entrypoint
-  * [ ] Define optimizer entrypoint
-  * [ ] Define rationale generation entrypoint
-  * [ ] Define exploration override entrypoint
+  * [x] Define scoring entrypoint
+  * [x] Define calibration entrypoint
+  * [x] Define optimizer entrypoint
+  * [x] Define rationale generation entrypoint
+  * [x] Define exploration override entrypoint
 * [ ] Enforce interface consistency
 
   * [ ] Shared identifiers should use one naming convention
@@ -1043,11 +1043,11 @@ This phase is not about expanding scope. It is about making Phase 3 real, stable
 
 ### Feature 3.1.3 — Scoring pipeline hardening
 
-* [ ] Make the scoring data contract executable, not just documented
+* [x] Make the scoring data contract executable, not just documented
 
-  * [ ] Freeze the exact feature column list used by the model
-  * [ ] Fail fast if required feature columns are missing
-  * [ ] Fail fast if feature order differs from training order
+  * [x] Freeze the exact feature column list used by the model
+  * [x] Fail fast if required feature columns are missing
+  * [x] Fail fast if feature order differs from training order
 * [ ] Harden training and inference semantics
 
   * [ ] Document the label definition clearly
@@ -1088,12 +1088,12 @@ This phase is not about expanding scope. It is about making Phase 3 real, stable
 
 ### Feature 3.1.5 — Optimizer and eligibility reliability
 
-* [ ] Make eligibility logic fully testable and explicit
+* [x] Make eligibility logic fully testable and explicit
 
-  * [ ] Define one function to produce the eligible action set
-  * [ ] Define one function to apply price-floor constraints
-  * [ ] Define one function to enforce lead-time window rules
-  * [ ] Define one function to enforce excluded-service rules
+  * [x] Define one function to produce the eligible action set
+  * [x] Define one function to apply price-floor constraints
+  * [x] Define one function to enforce lead-time window rules
+  * [x] Define one function to enforce excluded-service rules
 * [ ] Tighten action ladder semantics
 
   * [ ] Ensure `0%` is always representable
@@ -1133,15 +1133,15 @@ This phase is not about expanding scope. It is about making Phase 3 real, stable
 
 ### Feature 3.1.7 — Exploration determinism and policy safety
 
-* [ ] Make exploration implementation reproducible
+* [x] Make exploration implementation reproducible
 
-  * [ ] Seed exploration deterministically from stable identifiers such as `run_id`, `slot_id`, and global seed
-  * [ ] Ensure repeated runs with same seed yield same exploratory choices
-* [ ] Constrain exploration safely
+  * [x] Seed exploration deterministically from stable identifiers such as `run_id`, `slot_id`, and global seed
+  * [x] Ensure repeated runs with same seed yield same exploratory choices
+* [x] Constrain exploration safely
 
-  * [ ] Exploration may only select from `eligible_action_set`
-  * [ ] Exploration may not violate max discount or price floor
-  * [ ] Exploration share must be bounded to `[0, 1]`
+  * [x] Exploration may only select from `eligible_action_set`
+  * [x] Exploration may not violate max discount or price floor
+  * [x] Exploration share must be bounded to `[0, 1]`
 * [ ] Improve exploration logging
 
   * [ ] Persist `was_exploration`
@@ -1182,11 +1182,11 @@ This phase is not about expanding scope. It is about making Phase 3 real, stable
 
 ### Feature 3.1.9 — Pipeline run failure semantics and observability
 
-* [ ] Fix `pipeline_runs` failure handling
+* [x] Fix `pipeline_runs` failure handling
 
-  * [ ] Ensure failed runs are still recorded
-  * [ ] Do not lose run metadata on transaction rollback
-  * [ ] Persist terminal status as success or failed
+  * [x] Ensure failed runs are still recorded
+  * [x] Do not lose run metadata on transaction rollback
+  * [x] Persist terminal status as success or failed
 * [ ] Improve stage-level observability
 
   * [ ] Log stage start
@@ -1223,11 +1223,11 @@ This phase is not about expanding scope. It is about making Phase 3 real, stable
 
 ### Feature 3.1.11 — End-to-end test coverage for actual runnable behavior
 
-* [ ] Add a top-level runner smoke test
+* [x] Add a top-level runner smoke test
 
-  * [ ] Execute the real pipeline entrypoint against a temporary DuckDB database
-  * [ ] Assert that the run completes successfully
-  * [ ] Assert that pricing actions are produced
+  * [x] Execute the real pipeline entrypoint against a temporary DuckDB database
+  * [x] Assert that the run completes successfully
+  * [x] Assert that pricing actions are produced
 * [ ] Add a Phase 3 integration test suite
 
   * [ ] scoring outputs are produced
@@ -1236,9 +1236,9 @@ This phase is not about expanding scope. It is about making Phase 3 real, stable
   * [ ] pricing actions are produced
   * [ ] rationale codes are attached
   * [ ] exploration metadata is correct
-* [ ] Add failure-path tests
+* [x] Add failure-path tests
 
-  * [ ] broken stage marks run as failed
+  * [x] broken stage marks run as failed
   * [ ] no partial recommendation outputs survive for a failed run unless explicitly intended
 * [ ] Add idempotency tests
 
