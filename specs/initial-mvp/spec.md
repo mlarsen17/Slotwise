@@ -977,6 +977,312 @@ Tighten Phase 2 so the feature layer is trustworthy for downstream scoring and o
 
 ---
 
+## Phase 3.1 — Phase 3 Stabilization, Runner Integration, and Recommendation Reliability
+
+### Goal
+
+Close the gap between the intended Phase 3 design and the current repository state by:
+
+* [ ] wiring the scoring and optimization stack into the real pipeline runner
+* [ ] fixing current runner-breaking issues
+* [ ] hardening persistence and failure semantics
+* [ ] replacing Phase 3 placeholders with fully operational recommendation outputs
+* [ ] adding end-to-end tests that validate the actual runnable system
+
+This phase is not about expanding scope. It is about making Phase 3 real, stable, and trustworthy in the main execution path. The need for this phase follows from the current repo state: the spec says Phase 3 is complete, but the pipeline runner and project status do not yet reflect a finished scoring and recommendation flow.
+
+### Feature 3.1.1 — Runner correctness and stage wiring
+
+* [ ] Fix the current underbooking runner call
+
+  * [ ] Update `run_pipeline.py` to pass `sparse_baseline_fill_rate` into `detect_underbooking()`
+  * [ ] Verify the value is sourced from `cfg.underbooking.sparse_baseline_fill_rate`
+  * [ ] Confirm the pipeline no longer fails with a missing-argument error
+* [ ] Audit runner stage order
+
+  * [ ] Confirm extraction runs before load
+  * [ ] Confirm availability runs before baselines and features
+  * [ ] Confirm underbooking runs after feature materialization
+  * [ ] Insert scoring stage after underbooking
+  * [ ] Insert calibration stage after scoring
+  * [ ] Insert optimization stage after calibration
+  * [ ] Insert pricing action persistence after optimization
+* [ ] Standardize runner stage contracts
+
+  * [ ] Each stage should accept explicit inputs
+  * [ ] Each stage should return a deterministic summary or dataframe where appropriate
+  * [ ] Each stage should log row counts and output location
+* [ ] Validate full runner path
+
+  * [ ] Confirm a full pipeline run reaches pricing action outputs
+  * [ ] Confirm no Phase 3 logic is “implemented” only in isolated modules or tests
+
+### Feature 3.1.2 — Phase 3 module implementation alignment
+
+* [ ] Reconcile repo structure with Phase 3 requirements
+
+  * [ ] Confirm `models/` contains actual scoring implementation
+  * [ ] Confirm `optimizer/` contains actual eligibility, recommendation, rationale, and exploration modules
+  * [ ] Remove empty placeholder files or replace them with working code
+* [ ] Make module boundaries explicit
+
+  * [ ] Define scoring entrypoint
+  * [ ] Define calibration entrypoint
+  * [ ] Define optimizer entrypoint
+  * [ ] Define rationale generation entrypoint
+  * [ ] Define exploration override entrypoint
+* [ ] Enforce interface consistency
+
+  * [ ] Shared identifiers should use one naming convention
+  * [ ] Inputs should carry `run_id`, `scenario_id`, and `feature_snapshot_version`
+  * [ ] Outputs should be shaped for direct persistence into DuckDB tables
+* [ ] Validate implementation completeness
+
+  * [ ] Ensure no spec-marked-complete Phase 3 feature still exists only as a stub
+  * [ ] Ensure README and repo status match actual implementation state
+
+### Feature 3.1.3 — Scoring pipeline hardening
+
+* [ ] Make the scoring data contract executable, not just documented
+
+  * [ ] Freeze the exact feature column list used by the model
+  * [ ] Fail fast if required feature columns are missing
+  * [ ] Fail fast if feature order differs from training order
+* [ ] Harden training and inference semantics
+
+  * [ ] Document the label definition clearly
+  * [ ] Ensure no leakage fields are included in training inputs
+  * [ ] Persist model metadata alongside outputs
+  * [ ] Version model artifacts deterministically
+* [ ] Harden scoring output writes
+
+  * [ ] Delete scoped rows before insert for the current `run_id`
+  * [ ] Enforce one scoring output row per slot per snapshot version
+  * [ ] Validate all probability-like outputs are clamped to valid ranges
+* [ ] Validate scoring quality mechanically
+
+  * [ ] Confirm score distributions are non-degenerate
+  * [ ] Confirm booking probability and shortfall score move in opposite directions where expected
+  * [ ] Confirm reruns with same inputs produce identical scoring outputs outside explicitly seeded behavior
+
+### Feature 3.1.4 — Business calibration hardening
+
+* [ ] Make business calibration fully deterministic
+
+  * [ ] Seed or eliminate any non-deterministic logic
+  * [ ] Persist calibration factors by `business_id`, `run_id`, and `feature_snapshot_version`
+* [ ] Tighten calibration semantics
+
+  * [ ] Define exactly what base signal is being adjusted
+  * [ ] Define whether calibration applies to booking probability, shortfall score, or both
+  * [ ] Clamp calibrated values to valid numeric ranges
+* [ ] Improve calibration observability
+
+  * [ ] Log the number of calibrated businesses
+  * [ ] Log factor ranges
+  * [ ] Log fallback behavior for sparse business history
+* [ ] Validate calibration behavior
+
+  * [ ] Confirm calibration changes outputs where business history differs materially
+  * [ ] Confirm calibration remains a bounded adjustment rather than replacing pooled model behavior
+
+### Feature 3.1.5 — Optimizer and eligibility reliability
+
+* [ ] Make eligibility logic fully testable and explicit
+
+  * [ ] Define one function to produce the eligible action set
+  * [ ] Define one function to apply price-floor constraints
+  * [ ] Define one function to enforce lead-time window rules
+  * [ ] Define one function to enforce excluded-service rules
+* [ ] Tighten action ladder semantics
+
+  * [ ] Ensure `0%` is always representable
+  * [ ] Ensure configured ladder and configured max discount cannot diverge silently
+  * [ ] Fail fast if severity breakpoints and discount steps are misaligned
+* [ ] Improve optimizer policy clarity
+
+  * [ ] Document exactly how underbooking status, severity, and calibrated score interact
+  * [ ] Document the precedence of rules vs model-informed action mapping
+  * [ ] Ensure healthy slots default to `0%` unless explicitly overridden by exploration policy
+* [ ] Validate optimizer outputs
+
+  * [ ] Final action must always be a member of `eligible_action_set`
+  * [ ] Final implied price must always respect price floor
+  * [ ] Severity increases should generally not map to lower discounts without a documented rule reason
+
+### Feature 3.1.6 — Rationale code quality and consistency
+
+* [ ] Make rationale generation deterministic and rule-based
+
+  * [ ] Define a central rationale taxonomy
+  * [ ] Define threshold logic for each rationale code
+  * [ ] Prevent duplicate rationale codes per slot
+* [ ] Improve rationale coverage
+
+  * [ ] Ensure every discounted slot has at least one rationale code
+  * [ ] Ensure every non-zero recommendation has a decision reason
+  * [ ] Ensure exploration decisions can still surface operational rationale plus exploration metadata
+* [ ] Eliminate contradictory rationale combinations
+
+  * [ ] Review code combinations for conflicts
+  * [ ] Add tests for incompatible rationale pairs
+* [ ] Validate rationale usefulness
+
+  * [ ] Confirm rationale codes are traceable to actual feature values
+  * [ ] Confirm rationale codes explain both underbooking state and optimizer action where appropriate
+
+### Feature 3.1.7 — Exploration determinism and policy safety
+
+* [ ] Make exploration implementation reproducible
+
+  * [ ] Seed exploration deterministically from stable identifiers such as `run_id`, `slot_id`, and global seed
+  * [ ] Ensure repeated runs with same seed yield same exploratory choices
+* [ ] Constrain exploration safely
+
+  * [ ] Exploration may only select from `eligible_action_set`
+  * [ ] Exploration may not violate max discount or price floor
+  * [ ] Exploration share must be bounded to `[0, 1]`
+* [ ] Improve exploration logging
+
+  * [ ] Persist `was_exploration`
+  * [ ] Persist `exploration_policy`
+  * [ ] Persist final `decision_reason`
+  * [ ] Persist eligible action set used for the decision
+* [ ] Validate exploration behavior
+
+  * [ ] Confirm empirical exploration rate is close to configured rate
+  * [ ] Confirm exploratory and exploitative decisions are distinguishable in stored outputs
+
+### Feature 3.1.8 — Pricing action persistence and table integrity
+
+* [ ] Harden `pricing_actions` writes
+
+  * [ ] Delete scoped rows for current `run_id` before insert
+  * [ ] Ensure one logical pricing action row per slot per run
+  * [ ] Serialize JSON-like fields consistently
+* [ ] Strengthen database-level integrity where practical
+
+  * [ ] Add logical uniqueness checks for slots
+  * [ ] Add logical uniqueness checks for booking_events
+  * [ ] Add logical uniqueness checks for scoring_outputs
+  * [ ] Add logical uniqueness checks for pricing_actions
+* [ ] Improve persistence validation
+
+  * [ ] Check for duplicate slot recommendations after insert
+  * [ ] Check for null required fields after insert
+  * [ ] Check action values are within configured limits
+* [ ] Validate recommendation record completeness
+
+  * [ ] `recommended_action_type` present
+  * [ ] `recommended_action_value` present
+  * [ ] `decision_timestamp` present
+  * [ ] `confidence_score` present
+  * [ ] `rationale_codes` present
+  * [ ] exploration metadata present when applicable
+
+### Feature 3.1.9 — Pipeline run failure semantics and observability
+
+* [ ] Fix `pipeline_runs` failure handling
+
+  * [ ] Ensure failed runs are still recorded
+  * [ ] Do not lose run metadata on transaction rollback
+  * [ ] Persist terminal status as success or failed
+* [ ] Improve stage-level observability
+
+  * [ ] Log stage start
+  * [ ] Log stage end
+  * [ ] Log row counts in and out
+  * [ ] Log table names written
+  * [ ] Log failure location and exception context
+* [ ] Add end-of-run summary logging
+
+  * [ ] Total slots processed
+  * [ ] Underbooked slots detected
+  * [ ] Slots scored
+  * [ ] Pricing actions written
+  * [ ] Exploration share observed
+* [ ] Validate operational debuggability
+
+  * [ ] A failed run should still be diagnosable from DB state and logs
+  * [ ] A successful run should be auditable from `run_id`
+
+### Feature 3.1.10 — Performance cleanup for Phase 3-critical paths
+
+* [ ] Replace obvious quadratic feature computations before scaling further
+
+  * [ ] Rework `inventory_density_2h` to avoid row-by-row Python scans
+  * [ ] Prefer DuckDB SQL or vectorized Pandas operations for slot neighborhood calculations
+* [ ] Audit other expensive transformations
+
+  * [ ] Identify repeated dataframe scans inside loops
+  * [ ] Push large joins and aggregations into DuckDB where practical
+* [ ] Validate performance directionally
+
+  * [ ] Confirm the pipeline remains responsive on larger synthetic scenarios
+  * [ ] Confirm correctness does not change after vectorization or SQL rewrite
+
+### Feature 3.1.11 — End-to-end test coverage for actual runnable behavior
+
+* [ ] Add a top-level runner smoke test
+
+  * [ ] Execute the real pipeline entrypoint against a temporary DuckDB database
+  * [ ] Assert that the run completes successfully
+  * [ ] Assert that pricing actions are produced
+* [ ] Add a Phase 3 integration test suite
+
+  * [ ] scoring outputs are produced
+  * [ ] calibration outputs are produced
+  * [ ] eligible action sets are valid
+  * [ ] pricing actions are produced
+  * [ ] rationale codes are attached
+  * [ ] exploration metadata is correct
+* [ ] Add failure-path tests
+
+  * [ ] broken stage marks run as failed
+  * [ ] no partial recommendation outputs survive for a failed run unless explicitly intended
+* [ ] Add idempotency tests
+
+  * [ ] repeated full runs with same config produce same outputs
+  * [ ] no duplicate pricing action rows appear
+* [ ] Add recommendation-policy tests
+
+  * [ ] healthy slots map to `0%` by default
+  * [ ] underbooked higher-severity slots usually map to larger discounts
+  * [ ] excluded services remain undiscounted
+
+### Feature 3.1.12 — Documentation and status alignment
+
+* [ ] Update `README.md`
+
+  * [ ] Reflect actual implemented phase accurately
+  * [ ] Document how to run the full pipeline
+  * [ ] Document what outputs should exist after a successful run
+* [ ] Update spec completion markers honestly
+
+  * [ ] Mark only the truly completed Phase 3 items as complete
+  * [ ] Move partially implemented items into Phase 3.1 if still in progress
+* [ ] Document Phase 3 runtime contracts
+
+  * [ ] scoring inputs
+  * [ ] scoring outputs
+  * [ ] optimizer inputs
+  * [ ] pricing action outputs
+* [ ] Validate contributor clarity
+
+  * [ ] A new engineer or AI agent should be able to tell what is implemented, what is partial, and what remains
+
+### Feature 3.1.13 — Exit criteria
+
+* [ ] The real pipeline runner executes end to end without argument or wiring errors
+* [ ] Scoring, calibration, optimization, rationale generation, and exploration all run in the main path
+* [ ] `pricing_actions` is populated with stable, complete, idempotent outputs
+* [ ] Failed runs are persisted and diagnosable
+* [ ] End-to-end tests cover the actual runner, not just isolated stage functions
+* [ ] README and spec status match the real repository state
+* [ ] Phase 3 is trustworthy enough that Phase 4 can focus on UI and evaluation instead of backfilling core recommendation logic
+
+---
+
 ## Phase 4 — Pipeline Runner, Analytics UI, and Evaluation Suite
 
 ### Feature 4.1 — Plain Python pipeline runner
