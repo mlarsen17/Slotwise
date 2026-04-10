@@ -2,7 +2,7 @@
 
 Slotwise is a simulation-first MVP for a demand-aware pricing engine focused on underbooked appointment slots.
 
-The current codebase implements the Phase 1 foundation and Phase 2 underbooking analytics:
+The current codebase implements the full core pipeline through Phase 3 scoring and recommendations:
 
 - deterministic synthetic extraction via the Medscheduler wrapper
 - normalization into stable IDs and canonical entities
@@ -13,16 +13,22 @@ The current codebase implements the Phase 1 foundation and Phase 2 underbooking 
 - cohort baseline computation at snapshot time (`effective_ts`)
 - snapshot-safe feature materialization with trailing-window metrics (7d/14d/28d)
 - deterministic underbooking detection with sparse-cohort fallback controls
+- pooled logistic demand scoring with a frozen feature contract
+- deterministic business-level calibration factors
+- eligibility-filtered recommendation generation from a fixed action ladder
+- deterministic exploration override and rationale code generation
+- idempotent persistence of `scoring_outputs`, `business_calibrations`, and `pricing_actions`
+- runner-level `pipeline_runs` status tracking for both successful and failed runs
 
-> Scope note: this repository now includes underbooking analytics outputs (`cohort_baselines`, `feature_snapshots`, `underbooking_outputs`). Pricing optimization and UI surfaces remain scaffolded.
+> Scope note: this repository now includes operational Phase 3 outputs (`scoring_outputs`, `business_calibrations`, `pricing_actions`). The Streamlit UI remains scaffolded.
 
 ## Repository layout
 
 ```text
 medscheduler_wrapper/   # synthetic source generation + normalization
 pipeline/               # config, DB bootstrap, stages, runner
-models/                 # placeholder for scoring/calibration models
-optimizer/              # placeholder for eligibility/recommendation logic
+models/                 # scoring + calibration model logic
+optimizer/              # eligibility, recommendation, rationale, exploration logic
 app/                    # placeholder for Streamlit UI
 config/default.yaml     # default local run configuration
 tests/                  # phase-1 and availability behavior tests
@@ -56,6 +62,16 @@ python -c "from pipeline.run_pipeline import run; run('path/to/config.yaml')"
 ```
 
 Default outputs are written to `data/mvp.duckdb`.
+
+After a successful run you should see rows scoped by `run_id` in:
+
+- `cohort_baselines`
+- `feature_snapshots`
+- `underbooking_outputs`
+- `scoring_outputs`
+- `business_calibrations`
+- `pricing_actions`
+- `pipeline_runs` (terminal `status` of `success`)
 
 ## Slot availability semantics (Phase 1)
 
