@@ -1736,6 +1736,266 @@ This phase is a quality and trustworthiness phase. It does not expand the produc
   * [ ] Discounts are recommended coherently
   * [ ] Outputs are explainable and stable
 
+## Phase 4.1 — Phase 4 Integration Fixes, Evaluation Correctness, and Repo Alignment
+
+### Goal
+
+Close the gap between the intended Phase 4 design and the current repository state by:
+
+* fixing runner/config/stage integration issues that block a clean end-to-end Phase 4 run
+* hardening the analytics and evaluation surface so it reflects the real pipeline outputs
+* adding missing phase-specific tests for scoring, optimization, UI data access, and evaluation
+* aligning README/spec/project status with what is actually implemented
+
+This phase does not expand MVP scope. It makes Phase 4 executable, testable, and honest.
+
+### Feature 4.1.1 — Runner and config contract repair
+
+* [ ] Fix scoring-stage invocation in `run_pipeline.py`
+
+  * [ ] Pass `effective_ts` into `score_slots()`
+  * [ ] Pass `training_min_rows=cfg.scoring.training_min_rows` into `score_slots()`
+  * [ ] Confirm the call signature matches the implementation exactly
+* [ ] Fix optimizer-stage invocation in `run_pipeline.py`
+
+  * [ ] Replace any use of `lead_time_windows_hours` with the actual config field used by the implementation
+  * [ ] Pass `max_discount_lead_time_hours=cfg.max_discount_lead_time_hours`
+  * [ ] Confirm the runner no longer references non-existent config attributes
+* [ ] Reconcile config naming across code and YAML
+
+  * [ ] Ensure `config/default.yaml` uses `max_discount_lead_time_hours`
+  * [ ] Remove or rename any stale `lead_time_windows_hours` references
+  * [ ] Confirm config model, YAML, README, and tests use the same field names
+* [ ] Validate end-to-end runner execution
+
+  * [ ] Run the full pipeline from config
+  * [ ] Confirm all stages execute without argument errors
+  * [ ] Confirm the run produces `scoring_outputs`, `business_calibrations`, `pricing_actions`, and `evaluation_results`
+
+### Feature 4.1.2 — Phase 4 stage integration audit
+
+* [ ] Audit the actual Stage 4 execution path
+
+  * [ ] Confirm scoring writes occur before optimization reads
+  * [ ] Confirm calibration writes occur before optimization reads
+  * [ ] Confirm evaluation runs after final pricing actions are written
+  * [ ] Confirm Streamlit reads only completed pipeline outputs
+* [ ] Tighten stage output contracts
+
+  * [ ] Define required columns for `scoring_outputs`
+  * [ ] Define required columns for `business_calibrations`
+  * [ ] Define required columns for `pricing_actions`
+  * [ ] Define required columns for `evaluation_results`
+* [ ] Add stage-level validation checks
+
+  * [ ] Fail fast if scoring outputs are empty when open slots exist
+  * [ ] Fail fast if optimization runs without required scoring inputs
+  * [ ] Fail fast if evaluation runs without required upstream outputs
+* [ ] Improve integration observability
+
+  * [ ] Log row counts written by each Phase 4 stage
+  * [ ] Log table names and versions used
+  * [ ] Log the active `run_id`, `scenario_id`, `model_version`, and `feature_snapshot_version`
+
+### Feature 4.1.3 — Scoring and calibration persistence hardening
+
+* [ ] Harden `scoring_outputs` persistence
+
+  * [ ] Confirm one row per slot per `run_id` per `feature_snapshot_version`
+  * [ ] Add duplicate detection after insert
+  * [ ] Validate all probability-like outputs remain in [0, 1]
+* [ ] Harden `business_calibrations` persistence
+
+  * [ ] Confirm one row per business per `run_id` per `feature_snapshot_version`
+  * [ ] Validate calibration factors are always bounded
+  * [ ] Add duplicate detection after insert
+* [ ] Improve audit metadata
+
+  * [ ] Persist training row count consistently
+  * [ ] Persist fallback-vs-trained mode consistently
+  * [ ] Persist feature contract hash consistently
+  * [ ] Persist label definition consistently
+* [ ] Validate scoring/calibration reliability
+
+  * [ ] Confirm sparse-data fallback still produces safe outputs
+  * [ ] Confirm calibrated probabilities remain clamped
+  * [ ] Confirm reruns with identical config produce identical persisted outputs
+
+### Feature 4.1.4 — Optimization and pricing action integrity
+
+* [ ] Harden optimizer output semantics
+
+  * [ ] Confirm final chosen action is always in `eligible_action_set`
+  * [ ] Confirm healthy slots default to 0% outside exploration
+  * [ ] Confirm excluded services remain undiscounted
+  * [ ] Confirm price floor is always respected
+* [ ] Harden `pricing_actions` persistence
+
+  * [ ] Confirm one logical recommendation row per slot per run
+  * [ ] Add duplicate detection after insert
+  * [ ] Validate action values are always in the configured ladder
+  * [ ] Validate JSON-like fields serialize consistently
+* [ ] Improve pricing action completeness
+
+  * [ ] Ensure `action_type` is always present
+  * [ ] Ensure `action_value` is always present
+  * [ ] Ensure `decision_timestamp` is always present
+  * [ ] Ensure `confidence_score` is always present
+  * [ ] Ensure `rationale_codes` is always present
+  * [ ] Ensure exploration metadata is present when applicable
+* [ ] Validate recommendation-policy behavior
+
+  * [ ] Higher severity should generally not map to smaller discounts without an explicit rule reason
+  * [ ] Exploration decisions must remain policy-safe
+  * [ ] Reruns with same seed must preserve exploratory choices
+
+### Feature 4.1.5 — Streamlit analytics surface completion
+
+* [ ] Verify the Streamlit app is present, discoverable, and runnable
+
+  * [ ] Confirm there is a documented app entrypoint
+  * [ ] Confirm the repo structure matches README instructions
+  * [ ] Confirm the app handles no-run and empty-table states gracefully
+* [ ] Complete missing diagnostics views
+
+  * [ ] Selected slot vs cohort expected pace
+  * [ ] Selected slot vs expected fill
+  * [ ] Severity score distribution
+* [ ] Improve recommendation explorer fidelity
+
+  * [ ] Confirm displayed rows reconcile exactly with `pricing_actions`
+  * [ ] Confirm implied price calculation is correct
+  * [ ] Confirm rationale rendering handles JSON safely
+  * [ ] Confirm filters apply correctly to slot-level results
+* [ ] Improve summary view accuracy
+
+  * [ ] Confirm counts by action bucket reconcile with DuckDB
+  * [ ] Confirm counts by provider reconcile with DuckDB
+  * [ ] Confirm counts by service reconcile with DuckDB
+  * [ ] Confirm counts by lead-time band reconcile with DuckDB
+* [ ] Document how to run the UI
+
+  * [ ] Add Streamlit launch command
+  * [ ] Add expected prerequisites
+  * [ ] Add example screenshots or workflow notes if helpful
+
+### Feature 4.1.6 — Evaluation suite correctness and coverage
+
+* [ ] Complete missing evaluation checks
+
+  * [ ] Verify known low-demand scenarios are flagged
+  * [ ] Verify healthy scenarios are not over-flagged
+  * [ ] Verify only eligible underbooked slots receive discounts
+  * [ ] Verify larger discounts are generally associated with larger shortfalls
+  * [ ] Verify similar slots generally receive similar recommendations
+* [ ] Strengthen metric definitions
+
+  * [ ] Define underbooked flag rate clearly
+  * [ ] Define recommendation rate clearly
+  * [ ] Define rationale coverage clearly
+  * [ ] Define determinism/stability metric clearly
+* [ ] Improve evaluation persistence
+
+  * [ ] Ensure every stored metric includes `run_id`
+  * [ ] Ensure every stored metric includes `scenario_id`
+  * [ ] Ensure metric names are stable and documented
+* [ ] Validate evaluation trustworthiness
+
+  * [ ] Confirm metrics are computed from final persisted outputs, not intermediate ad hoc logic
+  * [ ] Confirm repeated identical runs produce identical evaluation results
+  * [ ] Confirm evaluation queries do not silently ignore missing upstream data
+
+### Feature 4.1.7 — Phase 4 test suite expansion
+
+* [ ] Add dedicated Phase 4 integration tests
+* [ ] Add scoring integration tests
+
+  * [ ] full pipeline run writes `scoring_outputs`
+  * [ ] fallback mode is exercised under low-row conditions
+  * [ ] trained mode is exercised under sufficient data conditions
+* [ ] Add optimization integration tests
+
+  * [ ] full pipeline run writes `pricing_actions`
+  * [ ] healthy slots default to 0%
+  * [ ] excluded services remain at 0%
+  * [ ] final action always belongs to `eligible_action_set`
+* [ ] Add evaluation integration tests
+
+  * [ ] evaluation results are persisted
+  * [ ] deterministic reruns produce stable metrics
+  * [ ] missing upstream outputs fail clearly
+* [ ] Add UI data-layer tests if the app has a separate query layer
+
+  * [ ] latest run lookup works
+  * [ ] filters generate expected query outputs
+  * [ ] empty-state handling is correct
+* [ ] Add full Phase 4 end-to-end test
+
+  * [ ] run the actual pipeline against a temp DuckDB
+  * [ ] assert all expected output tables are populated
+  * [ ] assert no duplicate logical records are produced on rerun
+
+### Feature 4.1.8 — Documentation and repo-status alignment
+
+* [ ] Update `README.md` to match actual implementation state
+
+  * [ ] Stop describing scoring and optimization as placeholders if they are implemented
+  * [ ] Describe the real current phase honestly
+  * [ ] Document pipeline outputs after a successful run
+  * [ ] Document how to launch Streamlit
+* [ ] Update spec completion markers honestly
+
+  * [ ] Re-open any Phase 4 items that are not actually complete
+  * [ ] Mark only implemented-and-validated items as complete
+  * [ ] Keep Phase 4.1 as the cleanup/hardening follow-on
+* [ ] Improve contributor clarity
+
+  * [ ] A new engineer or AI agent should be able to tell what is runnable today
+  * [ ] A new engineer or AI agent should be able to tell what is still partial
+  * [ ] A new engineer or AI agent should be able to tell what remains heuristic
+* [ ] Validate consistency across project artifacts
+
+  * [ ] `README.md`
+  * [ ] `spec.md`
+  * [ ] code comments
+  * [ ] config docs
+  * [ ] app run instructions
+
+### Feature 4.1.9 — End-to-end idempotency and completion audit
+
+* [ ] Re-run the full pipeline multiple times with identical config
+
+  * [ ] Confirm row counts remain stable
+  * [ ] Confirm no duplicate recommendations appear
+  * [ ] Confirm stable keys and versions are preserved
+* [ ] Re-run the full pipeline with changed config where expected
+
+  * [ ] Confirm changed config produces distinguishable run metadata
+  * [ ] Confirm config-driven behavior actually changes outputs where intended
+* [ ] Audit final MVP completion criteria
+
+  * [ ] pipeline runner works end to end
+  * [ ] Streamlit is operational and inspectable
+  * [ ] evaluation suite produces useful metrics
+  * [ ] outputs are explainable
+  * [ ] outputs are stable under rerun
+  * [ ] project docs match repo reality
+
+### Feature 4.1.10 — Exit criteria
+
+* [ ] The real pipeline runner executes end to end without runner/config argument mismatches
+* [ ] `scoring_outputs`, `business_calibrations`, `pricing_actions`, and `evaluation_results` are all populated on a successful run
+* [ ] Streamlit is present, documented, and reads the final persisted outputs correctly
+* [ ] Evaluation checks cover both pipeline health and recommendation quality
+* [ ] Full reruns are idempotent and deterministic under fixed config and seed
+* [ ] `README` and spec accurately describe the real repository state
+* [ ] Phase 4 is truly complete and trustworthy after this hardening pass
+
+### Notes on updating current spec status after this addition
+
+* [ ] In Phase 4, change several existing `[x]` markers back to `[ ]`, especially under 4.1, 4.3, 4.5, 4.6, and 4.8, until runner wiring, UI discoverability, and evaluation gaps are actually validated
+* [ ] Keep Phase 4.1 as the closeout section rather than silently absorbing these fixes into original Phase 4 items
+
 ---
 
 # Cross-Phase Rules the AI Agent Must Follow
