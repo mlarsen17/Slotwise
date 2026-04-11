@@ -144,6 +144,69 @@ def test_optimizer_lead_time_threshold_blocks_far_future_discounts(tmp_path: Pat
         assert far["action_value"] == 0.0
 
 
+def test_optimizer_respects_excluded_services_and_healthy_default(tmp_path: Path) -> None:
+    with connect(tmp_path / "p32_policy.duckdb") as conn:
+        bootstrap_db(conn)
+        _prep(conn)
+        score_slots(
+            conn,
+            scenario_id="s",
+            run_id="r",
+            feature_snapshot_version="f",
+            model_version="m",
+            l2_c=1.0,
+            effective_ts=datetime(2026, 1, 10, tzinfo=timezone.utc),
+            training_min_rows=1,
+        )
+        out = recommend_pricing_actions(
+            conn,
+            scenario_id="s",
+            run_id="r",
+            feature_snapshot_version="f",
+            effective_ts=datetime(2026, 1, 10, tzinfo=timezone.utc),
+            random_seed=3,
+            action_ladder=[0, 5, 10],
+            max_discount_lead_time_hours=168,
+            max_discount_pct=10,
+            excluded_services=["svc1"],
+            price_floor_pct=0.95,
+            healthy_zero_only=True,
+            severity_breakpoints=[0.2, 0.4],
+            discount_steps=[5, 10, 10],
+            exploration_share=0.0,
+        )
+        assert (out["action_value"] == 0.0).all()
+
+
+def test_business_calibration_persists_scoring_audit_metadata(tmp_path: Path) -> None:
+    with connect(tmp_path / "p32_calibration.duckdb") as conn:
+        bootstrap_db(conn)
+        _prep(conn)
+        score_slots(
+            conn,
+            scenario_id="s",
+            run_id="r",
+            feature_snapshot_version="f",
+            model_version="m",
+            l2_c=1.0,
+            effective_ts=datetime(2026, 1, 10, tzinfo=timezone.utc),
+            training_min_rows=5,
+        )
+        row = conn.execute(
+            """
+            SELECT training_row_count, used_fallback, label_definition, feature_contract_hash
+            FROM business_calibrations
+            WHERE scenario_id = 's' AND run_id = 'r' AND feature_snapshot_version = 'f'
+            LIMIT 1
+            """
+        ).fetchone()
+        assert row is not None
+        assert int(row[0]) == 1
+        assert bool(row[1]) is True
+        assert "effective_ts" in str(row[2])
+        assert len(str(row[3])) > 0
+
+
 def test_pipeline_run_audit_fields_on_success_and_failure(tmp_path: Path, monkeypatch) -> None:
     payload = {
         "duckdb_path": str(tmp_path / "runner.duckdb"),

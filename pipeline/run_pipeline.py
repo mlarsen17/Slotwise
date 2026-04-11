@@ -119,11 +119,17 @@ def _run_stage(
     state: dict[str, Any],
     logger: logging.Logger,
 ) -> StageResult:
+    logger.info(
+        "stage=%s event=start run_id=%s scenario_id=%s",
+        stage_name,
+        ctx.run_id,
+        ctx.scenario_id,
+    )
     t0 = time.perf_counter()
     row_count = stage_fn(conn, ctx, state)
     duration_ms = int((time.perf_counter() - t0) * 1000)
     logger.info(
-        "stage=%s run_id=%s scenario_id=%s row_count=%s duration_ms=%d",
+        "stage=%s event=end run_id=%s scenario_id=%s row_count=%s duration_ms=%d",
         stage_name,
         ctx.run_id,
         ctx.scenario_id,
@@ -315,6 +321,13 @@ def run(
                         logger=logger,
                     )
                 )
+            logger.info(
+                "run_summary run_id=%s scenario_id=%s stages=%d total_duration_ms=%d",
+                ctx.run_id,
+                ctx.scenario_id,
+                len(results),
+                sum(result.duration_ms for result in results),
+            )
             _finalize_pipeline_run(
                 conn,
                 ctx=ctx,

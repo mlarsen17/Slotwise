@@ -242,6 +242,11 @@ def bootstrap_db(conn: duckdb.DuckDBPyConnection) -> None:
           feature_snapshot_version TEXT,
           business_id TEXT,
           calibration_factor DOUBLE,
+          training_row_count INTEGER,
+          positive_label_rate DOUBLE,
+          used_fallback BOOLEAN,
+          label_definition TEXT,
+          feature_contract_hash TEXT,
           model_version TEXT
         );
 
@@ -374,6 +379,13 @@ def _ensure_columns(conn: duckdb.DuckDBPyConnection) -> None:
             "ADD COLUMN IF NOT EXISTS label_definition TEXT",
             "ADD COLUMN IF NOT EXISTS feature_contract_hash TEXT",
             "ADD COLUMN IF NOT EXISTS model_version TEXT",
+        ],
+        "business_calibrations": [
+            "ADD COLUMN IF NOT EXISTS training_row_count INTEGER",
+            "ADD COLUMN IF NOT EXISTS positive_label_rate DOUBLE",
+            "ADD COLUMN IF NOT EXISTS used_fallback BOOLEAN",
+            "ADD COLUMN IF NOT EXISTS label_definition TEXT",
+            "ADD COLUMN IF NOT EXISTS feature_contract_hash TEXT",
         ],
     }
     conn.execute(
