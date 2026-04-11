@@ -143,18 +143,24 @@ def materialize_feature_snapshot(
             .astype(int)
         )
 
-        local_density = []
-        for _, row in slots.iterrows():
-            neighborhood_start = row["slot_start_at"] - pd.Timedelta(hours=2)
-            neighborhood_end = row["slot_start_at"] + pd.Timedelta(hours=2)
-            density = slots[
-                (slots["business_id"] == row["business_id"])
-                & (slots["service_id"] == row["service_id"])
-                & (slots["slot_start_at"] >= neighborhood_start)
-                & (slots["slot_start_at"] <= neighborhood_end)
-            ]["slot_id"].nunique()
-            local_density.append(float(density))
-        slots["inventory_density_2h"] = local_density
+        density_source = slots[["slot_id", "business_id", "service_id", "slot_start_at"]].copy()
+        conn.register("tmp_density_source", density_source)
+        density_2h = conn.execute(
+            """
+            SELECT
+              a.slot_id,
+              COUNT(DISTINCT b.slot_id)::DOUBLE AS inventory_density_2h
+            FROM tmp_density_source a
+            JOIN tmp_density_source b
+              ON a.business_id = b.business_id
+             AND a.service_id = b.service_id
+             AND b.slot_start_at BETWEEN a.slot_start_at - INTERVAL 2 HOUR
+                                     AND a.slot_start_at + INTERVAL 2 HOUR
+            GROUP BY a.slot_id
+            """
+        ).fetchdf()
+        slots = slots.merge(density_2h, on="slot_id", how="left")
+        slots["inventory_density_2h"] = slots["inventory_density_2h"].fillna(0.0)
 
         hist_slots = slots[slots["slot_start_at"] <= snapshot_ts].copy()
         for window in (7, 14, 28):

@@ -305,12 +305,14 @@ def run(
 
     results: list[StageResult] = []
     state: dict[str, Any] = {}
+    current_stage: str | None = None
     with connect(cfg.duckdb_path) as conn:
         bootstrap_db(conn)
         _insert_pipeline_run(conn, ctx=ctx)
         _upsert_run_metadata(conn, ctx=ctx)
         try:
             for stage in selected:
+                current_stage = stage
                 results.append(
                     _run_stage(
                         conn,
@@ -321,12 +323,41 @@ def run(
                         logger=logger,
                     )
                 )
+            slot_count = conn.execute(
+                "SELECT COUNT(*) FROM slots WHERE run_id = ? AND scenario_id = ?",
+                [ctx.run_id, ctx.scenario_id],
+            ).fetchone()[0]
+            underbooked_count = conn.execute(
+                "SELECT COUNT(*) FROM underbooking_outputs WHERE run_id = ? AND scenario_id = ? AND underbooked = TRUE",
+                [ctx.run_id, ctx.scenario_id],
+            ).fetchone()[0]
+            scored_count = conn.execute(
+                "SELECT COUNT(*) FROM scoring_outputs WHERE run_id = ? AND scenario_id = ? AND feature_snapshot_version = ?",
+                [ctx.run_id, ctx.scenario_id, ctx.feature_snapshot_version],
+            ).fetchone()[0]
+            action_count = conn.execute(
+                "SELECT COUNT(*) FROM pricing_actions WHERE run_id = ? AND scenario_id = ?",
+                [ctx.run_id, ctx.scenario_id],
+            ).fetchone()[0]
+            exploration_share_observed = conn.execute(
+                """
+                SELECT COALESCE(AVG(CASE WHEN was_exploration THEN 1.0 ELSE 0.0 END), 0.0)
+                FROM pricing_actions
+                WHERE run_id = ? AND scenario_id = ?
+                """,
+                [ctx.run_id, ctx.scenario_id],
+            ).fetchone()[0]
             logger.info(
-                "run_summary run_id=%s scenario_id=%s stages=%d total_duration_ms=%d",
+                "run_summary run_id=%s scenario_id=%s stages=%d total_duration_ms=%d total_slots=%d underbooked_slots=%d scored_slots=%d pricing_actions=%d exploration_share_observed=%.4f",
                 ctx.run_id,
                 ctx.scenario_id,
                 len(results),
                 sum(result.duration_ms for result in results),
+                slot_count,
+                underbooked_count,
+                scored_count,
+                action_count,
+                float(exploration_share_observed),
             )
             _finalize_pipeline_run(
                 conn,
@@ -336,6 +367,12 @@ def run(
                 failure_message=None,
             )
         except Exception as exc:
+            logger.exception(
+                "pipeline_failed run_id=%s scenario_id=%s failed_stage=%s",
+                ctx.run_id,
+                ctx.scenario_id,
+                current_stage,
+            )
             _finalize_pipeline_run(
                 conn,
                 ctx=ctx,
