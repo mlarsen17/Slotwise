@@ -251,6 +251,19 @@ def bootstrap_db(conn: duckdb.DuckDBPyConnection) -> None:
           metric_value DOUBLE,
           scenario_id TEXT
         );
+
+
+        CREATE TABLE IF NOT EXISTS run_metadata (
+          run_id TEXT,
+          scenario_id TEXT,
+          effective_ts TIMESTAMP,
+          random_seed INTEGER,
+          config_hash TEXT,
+          config_version TEXT,
+          model_version TEXT,
+          feature_snapshot_version TEXT
+        );
+
         """
     )
     _ensure_columns(conn)
@@ -336,6 +349,15 @@ def _ensure_columns(conn: duckdb.DuckDBPyConnection) -> None:
             "ADD COLUMN IF NOT EXISTS duration_ms BIGINT",
             "ADD COLUMN IF NOT EXISTS failure_message TEXT",
         ],
+        "run_metadata": [
+            "ADD COLUMN IF NOT EXISTS scenario_id TEXT",
+            "ADD COLUMN IF NOT EXISTS effective_ts TIMESTAMP",
+            "ADD COLUMN IF NOT EXISTS random_seed INTEGER",
+            "ADD COLUMN IF NOT EXISTS config_hash TEXT",
+            "ADD COLUMN IF NOT EXISTS config_version TEXT",
+            "ADD COLUMN IF NOT EXISTS model_version TEXT",
+            "ADD COLUMN IF NOT EXISTS feature_snapshot_version TEXT",
+        ],
         "scoring_outputs": [
             "ADD COLUMN IF NOT EXISTS scenario_id TEXT",
             "ADD COLUMN IF NOT EXISTS feature_snapshot_version TEXT",
@@ -368,6 +390,20 @@ def _ensure_columns(conn: duckdb.DuckDBPyConnection) -> None:
           severity_score DOUBLE,
           underbooked BOOLEAN,
           detection_reason TEXT
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS run_metadata (
+          run_id TEXT,
+          scenario_id TEXT,
+          effective_ts TIMESTAMP,
+          random_seed INTEGER,
+          config_hash TEXT,
+          config_version TEXT,
+          model_version TEXT,
+          feature_snapshot_version TEXT
         )
         """
     )

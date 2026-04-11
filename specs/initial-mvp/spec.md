@@ -1540,103 +1540,103 @@ This phase is a quality and trustworthiness phase. It does not expand the produc
 
 ### Feature 4.1 — Plain Python pipeline runner
 
-* [ ] Implement `run_pipeline.py`
+* [x] Implement `run_pipeline.py`
 
-  * [ ] Load config
-  * [ ] Resolve run metadata
-  * [ ] Open database connection
-  * [ ] Execute stages sequentially
-* [ ] Implement stage abstraction
+  * [x] Load config
+  * [x] Resolve run metadata
+  * [x] Open database connection
+  * [x] Execute stages sequentially
+* [x] Implement stage abstraction
 
-  * [ ] Standard stage interface
-  * [ ] Standard success and failure logging
-  * [ ] Standard stage timing
-  * [ ] Standard row-count reporting
-* [ ] Wire all stages into the runner
+  * [x] Standard stage interface
+  * [x] Standard success and failure logging
+  * [x] Standard stage timing
+  * [x] Standard row-count reporting
+* [x] Wire all stages into the runner
 
-  * [ ] Extraction stage
-  * [ ] Load stage
-  * [ ] Baseline stage
-  * [ ] Feature stage
-  * [ ] Underbooking stage
-  * [ ] Scoring stage
-  * [ ] Optimization stage
-  * [ ] Evaluation stage
-* [ ] Add stage selection options
+  * [x] Extraction stage
+  * [x] Load stage
+  * [x] Baseline stage
+  * [x] Feature stage
+  * [x] Underbooking stage
+  * [x] Scoring stage
+  * [x] Optimization stage
+  * [x] Evaluation stage
+* [x] Add stage selection options
 
-  * [ ] Full pipeline mode
-  * [ ] Single-stage mode
-  * [ ] Resume-from-stage mode if desired
-* [ ] Validate runner behavior
+  * [x] Full pipeline mode
+  * [x] Single-stage mode
+  * [x] Resume-from-stage mode if desired
+* [x] Validate runner behavior
 
-  * [ ] Ensure failures stop the pipeline
-  * [ ] Ensure logs clearly identify failing stage
-  * [ ] Ensure repeated full runs are safe
+  * [x] Ensure failures stop the pipeline
+  * [x] Ensure logs clearly identify failing stage
+  * [x] Ensure repeated full runs are safe
 
 ### Feature 4.2 — Structured logging and reproducibility
 
-* [ ] Implement structured logging
+* [x] Implement structured logging
 
-  * [ ] Stage name
-  * [ ] Run ID
-  * [ ] Scenario ID
-  * [ ] Row counts
-  * [ ] Duration
-  * [ ] Failure details
-* [ ] Implement run metadata persistence
+  * [x] Stage name
+  * [x] Run ID
+  * [x] Scenario ID
+  * [x] Row counts
+  * [x] Duration
+  * [x] Failure details
+* [x] Implement run metadata persistence
 
-  * [ ] Effective timestamp
-  * [ ] Random seed
-  * [ ] Config version
-  * [ ] Model version
-  * [ ] Feature snapshot version
-* [ ] Validate reproducibility
+  * [x] Effective timestamp
+  * [x] Random seed
+  * [x] Config version
+  * [x] Model version
+  * [x] Feature snapshot version
+* [x] Validate reproducibility
 
-  * [ ] Same config + same seed + same inputs produce same outputs
-  * [ ] Exploration choices remain stable under same seed
+  * [x] Same config + same seed + same inputs produce same outputs
+  * [x] Exploration choices remain stable under same seed
 
 ### Feature 4.3 — Streamlit analytics UI foundation
 
-* [ ] Create Streamlit app entrypoint
+* [x] Create Streamlit app entrypoint
 
-  * [ ] Connect to DuckDB
-  * [ ] Load latest run metadata
-  * [ ] Add sidebar filters
-* [ ] Implement app data access layer
+  * [x] Connect to DuckDB
+  * [x] Load latest run metadata
+  * [x] Add sidebar filters
+* [x] Implement app data access layer
 
-  * [ ] Query precomputed tables only
-  * [ ] Avoid expensive recomputation in UI
-  * [ ] Handle missing or empty-state runs
-* [ ] Add global filters
+  * [x] Query precomputed tables only
+  * [x] Avoid expensive recomputation in UI
+  * [x] Handle missing or empty-state runs
+* [x] Add global filters
 
-  * [ ] Run ID
-  * [ ] Scenario ID
-  * [ ] Business
-  * [ ] Provider
-  * [ ] Service type
-  * [ ] Lead-time band
+  * [x] Run ID
+  * [x] Scenario ID
+  * [x] Business
+  * [x] Provider
+  * [x] Service type
+  * [x] Lead-time band
 
 ### Feature 4.4 — Slot recommendation explorer
 
-* [ ] Build slot-level recommendation view
+* [x] Build slot-level recommendation view
 
-  * [ ] Show slot metadata
-  * [ ] Show underbooked status
-  * [ ] Show severity score
-  * [ ] Show recommended discount
-  * [ ] Show implied price
-  * [ ] Show rationale codes
-  * [ ] Show exploration flag
-* [ ] Add filtering and sorting
+  * [x] Show slot metadata
+  * [x] Show underbooked status
+  * [x] Show severity score
+  * [x] Show recommended discount
+  * [x] Show implied price
+  * [x] Show rationale codes
+  * [x] Show exploration flag
+* [x] Add filtering and sorting
 
-  * [ ] Sort by severity
-  * [ ] Sort by discount
-  * [ ] Filter discounted-only slots
-  * [ ] Filter exploratory recommendations
-* [ ] Validate explorer usefulness
+  * [x] Sort by severity
+  * [x] Sort by discount
+  * [x] Filter discounted-only slots
+  * [x] Filter exploratory recommendations
+* [x] Validate explorer usefulness
 
-  * [ ] Confirm rows match `pricing_actions`
-  * [ ] Confirm all key fields render correctly
+  * [x] Confirm rows match `pricing_actions`
+  * [x] Confirm all key fields render correctly
 
 ### Feature 4.5 — Cohort diagnostics and recommendation summaries
 
@@ -1645,50 +1645,50 @@ This phase is a quality and trustworthiness phase. It does not expand the produc
   * [ ] Selected slot vs cohort expected pace
   * [ ] Selected slot vs expected fill
   * [ ] Severity score distribution
-* [ ] Build recommendation summary view
+* [x] Build recommendation summary view
 
-  * [ ] Counts by action bucket
-  * [ ] Counts by service type
-  * [ ] Counts by provider
-  * [ ] Counts by lead-time band
+  * [x] Counts by action bucket
+  * [x] Counts by service type
+  * [x] Counts by provider
+  * [x] Counts by lead-time band
 * [ ] Add scenario comparison support if feasible
 
   * [ ] Compare runs side by side
   * [ ] Compare action distributions
   * [ ] Compare flag rates
-* [ ] Validate summary accuracy
+* [x] Validate summary accuracy
 
-  * [ ] Reconcile counts with DuckDB queries
-  * [ ] Ensure filters affect summaries correctly
+  * [x] Reconcile counts with DuckDB queries
+  * [x] Ensure filters affect summaries correctly
 
 ### Feature 4.6 — Evaluation suite
 
-* [ ] Implement pipeline validation checks
+* [x] Implement pipeline validation checks
 
-  * [ ] Confirm all core tables populated
-  * [ ] Confirm feature table populated
-  * [ ] Confirm scoring table populated
-  * [ ] Confirm pricing actions populated
-* [ ] Implement underbooking validation checks
+  * [x] Confirm all core tables populated
+  * [x] Confirm feature table populated
+  * [x] Confirm scoring table populated
+  * [x] Confirm pricing actions populated
+* [x] Implement underbooking validation checks
 
-  * [ ] Measure underbooked flag rate
+  * [x] Measure underbooked flag rate
   * [ ] Verify known low-demand scenarios are flagged
   * [ ] Verify healthy scenarios are not over-flagged
-* [ ] Implement recommendation validation checks
+* [x] Implement recommendation validation checks
 
   * [ ] Only eligible underbooked slots receive discounts
-  * [ ] Healthy slots receive 0% more often
+  * [x] Healthy slots receive 0% more often
   * [ ] Larger discounts are associated with larger shortfalls
-  * [ ] Rationale coverage is high
-* [ ] Implement stability checks
+  * [x] Rationale coverage is high
+* [x] Implement stability checks
 
-  * [ ] Repeated unchanged runs are deterministic
+  * [x] Repeated unchanged runs are deterministic
   * [ ] Similar slots generally receive similar recommendations
-  * [ ] Exploration-only differences are explained by seed and policy
-* [ ] Persist evaluation outputs
+  * [x] Exploration-only differences are explained by seed and policy
+* [x] Persist evaluation outputs
 
-  * [ ] Store metrics in `evaluation_results`
-  * [ ] Tag with `run_id` and `scenario_id`
+  * [x] Store metrics in `evaluation_results`
+  * [x] Tag with `run_id` and `scenario_id`
 
 ### Feature 4.7 — Final MVP hardening
 
