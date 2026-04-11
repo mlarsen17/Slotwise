@@ -14,11 +14,12 @@ The current codebase implements the full core pipeline through Phase 3 scoring a
 - snapshot-safe feature materialization with trailing-window metrics (7d/14d/28d)
 - deterministic underbooking detection with sparse-cohort fallback controls
 - pooled logistic demand scoring with a frozen feature contract
+- snapshot-safe scoring labels (as-of `effective_ts`) with minimum-row fallback guardrails
 - deterministic business-level calibration factors
 - eligibility-filtered recommendation generation from a fixed action ladder
 - deterministic exploration override and rationale code generation
 - idempotent persistence of `scoring_outputs`, `business_calibrations`, and `pricing_actions`
-- runner-level `pipeline_runs` status tracking for both successful and failed runs
+- runner-level `pipeline_runs` auditability (`started_at`, `ended_at`, `duration_ms`, failure metadata)
 
 > Scope note: this repository now includes operational Phase 3 outputs (`scoring_outputs`, `business_calibrations`, `pricing_actions`). The Streamlit UI remains scaffolded.
 
@@ -72,6 +73,11 @@ After a successful run you should see rows scoped by `run_id` in:
 - `business_calibrations`
 - `pricing_actions`
 - `pipeline_runs` (terminal `status` of `success`)
+
+Current limitations are intentionally explicit:
+
+- calibration remains a bounded heuristic factor (not full probabilistic calibration)
+- model artifacts are not serialized; scoring metadata is persisted instead
 
 ## Slot availability semantics (Phase 1)
 

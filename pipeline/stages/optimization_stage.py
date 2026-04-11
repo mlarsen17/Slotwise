@@ -22,7 +22,7 @@ def recommend_pricing_actions(
     effective_ts: datetime,
     random_seed: int,
     action_ladder: list[int],
-    lead_time_windows_hours: list[int],
+    max_discount_lead_time_hours: int,
     max_discount_pct: int,
     excluded_services: list[str],
     price_floor_pct: float,
@@ -37,9 +37,9 @@ def recommend_pricing_actions(
     df = conn.execute(
         """
         SELECT s.slot_id, s.business_id, s.provider_id, s.service_id, s.standard_price, s.slot_start_at,
-               f.hours_until_slot, f.provider_utilization_7d,
+               f.hours_until_slot, f.provider_utilization_7d, f.day_of_week, f.time_of_day_bucket, f.pace_deviation,
                u.underbooked, u.severity_score, u.pace_gap_normalized,
-               sc.shortfall_score, sc.confidence_score
+               sc.shortfall_score, sc.score_margin, sc.confidence_score
         FROM slots s
         JOIN feature_snapshots f
           ON f.slot_id = s.slot_id
@@ -74,7 +74,6 @@ def recommend_pricing_actions(
     if df.empty:
         output = pd.DataFrame()
     else:
-        allowed_lead_time = max(lead_time_windows_hours) if lead_time_windows_hours else 0
         floor_multiplier = max(min(price_floor_pct, 1.0), 0.0)
 
         records: list[dict] = []
@@ -85,7 +84,7 @@ def recommend_pricing_actions(
                 service_id=str(row["service_id"]),
                 excluded_services=excluded_services,
                 hours_until_slot=float(row["hours_until_slot"]),
-                allowed_lead_time=allowed_lead_time,
+                allowed_lead_time=max_discount_lead_time_hours,
                 standard_price=float(row["standard_price"]),
                 floor_multiplier=floor_multiplier,
             )
@@ -117,6 +116,9 @@ def recommend_pricing_actions(
                 underbooked=underbooked,
                 hours_until_slot=float(row["hours_until_slot"]),
                 provider_utilization_7d=float(row["provider_utilization_7d"] or 0.0),
+                day_of_week=str(row["day_of_week"]),
+                time_of_day_bucket=str(row["time_of_day_bucket"]),
+                pace_deviation=float(row["pace_deviation"] or 0.0),
                 chosen_discount=int(chosen),
             )
 
@@ -136,6 +138,11 @@ def recommend_pricing_actions(
                     "decision_timestamp": effective_ts,
                     "feature_snapshot_version": feature_snapshot_version,
                     "confidence_score": float(row["confidence_score"] or 0.0),
+                    "score_margin": float(
+                        row["score_margin"]
+                        if pd.notna(row["score_margin"])
+                        else row["confidence_score"] or 0.0
+                    ),
                     "rationale_codes": json.dumps(rationale),
                     "run_id": run_id,
                     "scenario_id": scenario_id,
@@ -154,7 +161,7 @@ def recommend_pricing_actions(
             INSERT INTO pricing_actions (
               action_id, slot_id, action_type, action_value, eligible_action_set,
               decision_reason, was_exploration, exploration_policy, decision_timestamp,
-              feature_snapshot_version, confidence_score, rationale_codes, run_id, scenario_id
+              feature_snapshot_version, confidence_score, score_margin, rationale_codes, run_id, scenario_id
             )
             SELECT * FROM tmp_pricing_actions
             """

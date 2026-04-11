@@ -135,6 +135,9 @@ def bootstrap_db(conn: duckdb.DuckDBPyConnection) -> None:
           effective_ts TIMESTAMP,
           config_hash TEXT,
           started_at TIMESTAMP,
+          ended_at TIMESTAMP,
+          duration_ms BIGINT,
+          failure_message TEXT,
           status TEXT
         );
 
@@ -224,6 +227,12 @@ def bootstrap_db(conn: duckdb.DuckDBPyConnection) -> None:
           predicted_fill_by_start DOUBLE,
           shortfall_score DOUBLE,
           confidence_score DOUBLE,
+          score_margin DOUBLE,
+          training_row_count INTEGER,
+          positive_label_rate DOUBLE,
+          used_fallback BOOLEAN,
+          label_definition TEXT,
+          feature_contract_hash TEXT,
           model_version TEXT
         );
 
@@ -319,7 +328,13 @@ def _ensure_columns(conn: duckdb.DuckDBPyConnection) -> None:
             "ADD COLUMN IF NOT EXISTS decision_timestamp TIMESTAMP",
             "ADD COLUMN IF NOT EXISTS feature_snapshot_version TEXT",
             "ADD COLUMN IF NOT EXISTS confidence_score DOUBLE",
+            "ADD COLUMN IF NOT EXISTS score_margin DOUBLE",
             "ADD COLUMN IF NOT EXISTS rationale_codes TEXT",
+        ],
+        "pipeline_runs": [
+            "ADD COLUMN IF NOT EXISTS ended_at TIMESTAMP",
+            "ADD COLUMN IF NOT EXISTS duration_ms BIGINT",
+            "ADD COLUMN IF NOT EXISTS failure_message TEXT",
         ],
         "scoring_outputs": [
             "ADD COLUMN IF NOT EXISTS scenario_id TEXT",
@@ -330,6 +345,12 @@ def _ensure_columns(conn: duckdb.DuckDBPyConnection) -> None:
             "ADD COLUMN IF NOT EXISTS predicted_fill_by_start DOUBLE",
             "ADD COLUMN IF NOT EXISTS shortfall_score DOUBLE",
             "ADD COLUMN IF NOT EXISTS confidence_score DOUBLE",
+            "ADD COLUMN IF NOT EXISTS score_margin DOUBLE",
+            "ADD COLUMN IF NOT EXISTS training_row_count INTEGER",
+            "ADD COLUMN IF NOT EXISTS positive_label_rate DOUBLE",
+            "ADD COLUMN IF NOT EXISTS used_fallback BOOLEAN",
+            "ADD COLUMN IF NOT EXISTS label_definition TEXT",
+            "ADD COLUMN IF NOT EXISTS feature_contract_hash TEXT",
             "ADD COLUMN IF NOT EXISTS model_version TEXT",
         ],
     }
