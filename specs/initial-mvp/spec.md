@@ -1786,11 +1786,11 @@ This phase does not expand MVP scope. It makes Phase 4 executable, testable, and
   * [ ] Define required columns for `business_calibrations`
   * [ ] Define required columns for `pricing_actions`
   * [ ] Define required columns for `evaluation_results`
-* [ ] Add stage-level validation checks
+* [x] Add stage-level validation checks
 
-  * [ ] Fail fast if scoring outputs are empty when open slots exist
-  * [ ] Fail fast if optimization runs without required scoring inputs
-  * [ ] Fail fast if evaluation runs without required upstream outputs
+  * [x] Fail fast if scoring outputs are empty when open slots exist
+  * [x] Fail fast if optimization runs without required scoring inputs
+  * [x] Fail fast if evaluation runs without required upstream outputs
 * [ ] Improve integration observability
 
   * [ ] Log row counts written by each Phase 4 stage
@@ -1799,11 +1799,11 @@ This phase does not expand MVP scope. It makes Phase 4 executable, testable, and
 
 ### Feature 4.1.3 — Scoring and calibration persistence hardening
 
-* [ ] Harden `scoring_outputs` persistence
+* [x] Harden `scoring_outputs` persistence
 
-  * [ ] Confirm one row per slot per `run_id` per `feature_snapshot_version`
-  * [ ] Add duplicate detection after insert
-  * [ ] Validate all probability-like outputs remain in [0, 1]
+  * [x] Confirm one row per slot per `run_id` per `feature_snapshot_version`
+  * [x] Add duplicate detection after insert
+  * [x] Validate all probability-like outputs remain in [0, 1]
 * [ ] Harden `business_calibrations` persistence
 
   * [ ] Confirm one row per business per `run_id` per `feature_snapshot_version`
@@ -1823,25 +1823,25 @@ This phase does not expand MVP scope. It makes Phase 4 executable, testable, and
 
 ### Feature 4.1.4 — Optimization and pricing action integrity
 
-* [ ] Harden optimizer output semantics
+* [x] Harden optimizer output semantics
 
-  * [ ] Confirm final chosen action is always in `eligible_action_set`
+  * [x] Confirm final chosen action is always in `eligible_action_set`
   * [ ] Confirm healthy slots default to 0% outside exploration
   * [ ] Confirm excluded services remain undiscounted
   * [ ] Confirm price floor is always respected
-* [ ] Harden `pricing_actions` persistence
+* [x] Harden `pricing_actions` persistence
 
-  * [ ] Confirm one logical recommendation row per slot per run
-  * [ ] Add duplicate detection after insert
-  * [ ] Validate action values are always in the configured ladder
-  * [ ] Validate JSON-like fields serialize consistently
-* [ ] Improve pricing action completeness
+  * [x] Confirm one logical recommendation row per slot per run
+  * [x] Add duplicate detection after insert
+  * [x] Validate action values are always in the configured ladder
+  * [x] Validate JSON-like fields serialize consistently
+* [x] Improve pricing action completeness
 
-  * [ ] Ensure `action_type` is always present
-  * [ ] Ensure `action_value` is always present
-  * [ ] Ensure `decision_timestamp` is always present
-  * [ ] Ensure `confidence_score` is always present
-  * [ ] Ensure `rationale_codes` is always present
+  * [x] Ensure `action_type` is always present
+  * [x] Ensure `action_value` is always present
+  * [x] Ensure `decision_timestamp` is always present
+  * [x] Ensure `confidence_score` is always present
+  * [x] Ensure `rationale_codes` is always present
   * [ ] Ensure exploration metadata is present when applicable
 * [ ] Validate recommendation-policy behavior
 
@@ -1856,23 +1856,23 @@ This phase does not expand MVP scope. It makes Phase 4 executable, testable, and
   * [ ] Confirm there is a documented app entrypoint
   * [ ] Confirm the repo structure matches README instructions
   * [ ] Confirm the app handles no-run and empty-table states gracefully
-* [ ] Complete missing diagnostics views
+* [x] Complete missing diagnostics views
 
   * [ ] Selected slot vs cohort expected pace
   * [ ] Selected slot vs expected fill
-  * [ ] Severity score distribution
+  * [x] Severity score distribution
 * [ ] Improve recommendation explorer fidelity
 
   * [ ] Confirm displayed rows reconcile exactly with `pricing_actions`
   * [ ] Confirm implied price calculation is correct
   * [ ] Confirm rationale rendering handles JSON safely
   * [ ] Confirm filters apply correctly to slot-level results
-* [ ] Improve summary view accuracy
+* [x] Improve summary view accuracy
 
-  * [ ] Confirm counts by action bucket reconcile with DuckDB
-  * [ ] Confirm counts by provider reconcile with DuckDB
-  * [ ] Confirm counts by service reconcile with DuckDB
-  * [ ] Confirm counts by lead-time band reconcile with DuckDB
+  * [x] Confirm counts by action bucket reconcile with DuckDB
+  * [x] Confirm counts by provider reconcile with DuckDB
+  * [x] Confirm counts by service reconcile with DuckDB
+  * [x] Confirm counts by lead-time band reconcile with DuckDB
 * [ ] Document how to run the UI
 
   * [ ] Add Streamlit launch command
@@ -1894,10 +1894,10 @@ This phase does not expand MVP scope. It makes Phase 4 executable, testable, and
   * [ ] Define recommendation rate clearly
   * [ ] Define rationale coverage clearly
   * [ ] Define determinism/stability metric clearly
-* [ ] Improve evaluation persistence
+* [x] Improve evaluation persistence
 
-  * [ ] Ensure every stored metric includes `run_id`
-  * [ ] Ensure every stored metric includes `scenario_id`
+  * [x] Ensure every stored metric includes `run_id`
+  * [x] Ensure every stored metric includes `scenario_id`
   * [ ] Ensure metric names are stable and documented
 * [ ] Validate evaluation trustworthiness
 
@@ -1924,10 +1924,10 @@ This phase does not expand MVP scope. It makes Phase 4 executable, testable, and
   * [ ] evaluation results are persisted
   * [ ] deterministic reruns produce stable metrics
   * [ ] missing upstream outputs fail clearly
-* [ ] Add UI data-layer tests if the app has a separate query layer
+* [x] Add UI data-layer tests if the app has a separate query layer
 
   * [ ] latest run lookup works
-  * [ ] filters generate expected query outputs
+  * [x] filters generate expected query outputs
   * [ ] empty-state handling is correct
 * [ ] Add full Phase 4 end-to-end test
 

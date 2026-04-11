@@ -11,6 +11,26 @@ def run_evaluation_suite(
     run_id: str,
     feature_snapshot_version: str,
 ) -> pd.DataFrame:
+    slots_count = conn.execute(
+        "SELECT COUNT(*) FROM slots WHERE run_id = ? AND scenario_id = ?",
+        [run_id, scenario_id],
+    ).fetchone()[0]
+    feature_count = conn.execute(
+        """
+        SELECT COUNT(*) FROM feature_snapshots
+        WHERE run_id = ? AND scenario_id = ? AND feature_snapshot_version = ?
+        """,
+        [run_id, scenario_id, feature_snapshot_version],
+    ).fetchone()[0]
+    pricing_count = conn.execute(
+        "SELECT COUNT(*) FROM pricing_actions WHERE run_id = ? AND scenario_id = ?",
+        [run_id, scenario_id],
+    ).fetchone()[0]
+    if slots_count == 0 or feature_count == 0 or pricing_count == 0:
+        raise ValueError(
+            "Evaluation requires populated slots, feature_snapshots, and pricing_actions"
+        )
+
     metrics: list[tuple[str, float]] = []
 
     def metric(name: str, query: str, params: list | None = None) -> float:
@@ -83,6 +103,40 @@ def run_evaluation_suite(
         SELECT COALESCE(AVG(CASE WHEN rationale_codes IS NOT NULL AND rationale_codes <> '[]' THEN 1.0 ELSE 0.0 END), 0.0)
         FROM pricing_actions
         WHERE run_id = ? AND scenario_id = ?
+        """,
+        [run_id, scenario_id],
+    )
+    metric(
+        "eligible_discount_compliance_rate",
+        """
+        SELECT COALESCE(AVG(
+            CASE
+              WHEN list_contains(
+                from_json(eligible_action_set, '["INTEGER"]'),
+                CAST(action_value AS INTEGER)
+              ) THEN 1.0
+              ELSE 0.0
+            END
+        ), 0.0)
+        FROM pricing_actions
+        WHERE run_id = ? AND scenario_id = ?
+        """,
+        [run_id, scenario_id],
+    )
+    metric(
+        "discount_shortfall_correlation",
+        """
+        SELECT COALESCE(
+          corr(CAST(p.action_value AS DOUBLE), CAST(s.shortfall_score AS DOUBLE)),
+          0.0
+        )
+        FROM pricing_actions p
+        JOIN scoring_outputs s
+          ON p.slot_id = s.slot_id
+         AND p.run_id = s.run_id
+         AND p.scenario_id = s.scenario_id
+         AND p.feature_snapshot_version = s.feature_snapshot_version
+        WHERE p.run_id = ? AND p.scenario_id = ? AND p.action_value > 0
         """,
         [run_id, scenario_id],
     )

@@ -34,6 +34,36 @@ def recommend_pricing_actions(
     if not 0.0 <= exploration_share <= 1.0:
         raise ValueError("exploration_share must be in [0, 1]")
 
+    open_slots = conn.execute(
+        """
+        SELECT COUNT(*)
+        FROM slots
+        WHERE scenario_id = ? AND run_id = ? AND current_status = 'open' AND slot_start_at >= ?
+        """,
+        [scenario_id, run_id, effective_ts],
+    ).fetchone()[0]
+    if open_slots > 0:
+        scoring_count = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM scoring_outputs
+            WHERE scenario_id = ? AND run_id = ? AND feature_snapshot_version = ?
+            """,
+            [scenario_id, run_id, feature_snapshot_version],
+        ).fetchone()[0]
+        calibration_count = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM business_calibrations
+            WHERE scenario_id = ? AND run_id = ? AND feature_snapshot_version = ?
+            """,
+            [scenario_id, run_id, feature_snapshot_version],
+        ).fetchone()[0]
+        if scoring_count == 0:
+            raise ValueError("Optimization requires scoring_outputs but none were found")
+        if calibration_count == 0:
+            raise ValueError("Optimization requires business_calibrations but none were found")
+
     df = conn.execute(
         """
         SELECT s.slot_id, s.business_id, s.provider_id, s.service_id, s.standard_price, s.slot_start_at,
@@ -150,6 +180,34 @@ def recommend_pricing_actions(
             )
 
         output = pd.DataFrame.from_records(records)
+        output["eligible_action_set"] = output["eligible_action_set"].apply(
+            lambda value: json.dumps(sorted({int(item) for item in json.loads(value)}))
+        )
+
+        missing_required = (
+            output[
+                [
+                    "action_type",
+                    "action_value",
+                    "decision_timestamp",
+                    "confidence_score",
+                    "rationale_codes",
+                ]
+            ]
+            .isna()
+            .any(axis=1)
+        )
+        if bool(missing_required.any()):
+            raise ValueError("pricing_actions output is missing required fields")
+
+        def _validate_action(row: pd.Series) -> bool:
+            eligible = {int(v) for v in json.loads(str(row["eligible_action_set"]))}
+            action = int(float(row["action_value"]))
+            return action in eligible and action in set(action_ladder)
+
+        invalid_actions = (~output.apply(_validate_action, axis=1)).sum()
+        if int(invalid_actions) > 0:
+            raise ValueError("Final action is not in eligible_action_set or action_ladder")
 
     conn.execute(
         "DELETE FROM pricing_actions WHERE scenario_id = ? AND run_id = ?", [scenario_id, run_id]
@@ -166,4 +224,19 @@ def recommend_pricing_actions(
             SELECT * FROM tmp_pricing_actions
             """
         )
+        duplicates = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM (
+              SELECT slot_id
+              FROM pricing_actions
+              WHERE scenario_id = ? AND run_id = ?
+              GROUP BY slot_id
+              HAVING COUNT(*) > 1
+            )
+            """,
+            [scenario_id, run_id],
+        ).fetchone()[0]
+        if duplicates > 0:
+            raise ValueError("Duplicate pricing_actions rows detected for slot_id within run")
     return output

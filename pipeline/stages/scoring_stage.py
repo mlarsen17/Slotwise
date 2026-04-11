@@ -116,6 +116,15 @@ def score_slots(
         [scenario_id, run_id, feature_snapshot_version],
     ).fetchdf()
 
+    open_slots = conn.execute(
+        """
+        SELECT COUNT(*)
+        FROM slots
+        WHERE scenario_id = ? AND run_id = ? AND slot_start_at >= ? AND current_status = 'open'
+        """,
+        [scenario_id, run_id, effective_ts],
+    ).fetchone()[0]
+
     if scoring.empty:
         output = pd.DataFrame()
     else:
@@ -212,4 +221,39 @@ def score_slots(
             SELECT * FROM tmp_scoring_outputs
             """
         )
+        duplicate_count = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM (
+              SELECT slot_id
+              FROM scoring_outputs
+              WHERE scenario_id = ? AND run_id = ? AND feature_snapshot_version = ?
+              GROUP BY slot_id
+              HAVING COUNT(*) > 1
+            )
+            """,
+            [scenario_id, run_id, feature_snapshot_version],
+        ).fetchone()[0]
+        if duplicate_count > 0:
+            raise ValueError("Duplicate scoring_outputs rows detected for slot_id within run")
+
+        out_of_range = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM scoring_outputs
+            WHERE scenario_id = ? AND run_id = ? AND feature_snapshot_version = ?
+              AND (
+                booking_probability NOT BETWEEN 0.0 AND 1.0 OR
+                calibrated_booking_probability NOT BETWEEN 0.0 AND 1.0 OR
+                predicted_fill_by_start NOT BETWEEN 0.0 AND 1.0 OR
+                shortfall_score NOT BETWEEN 0.0 AND 1.0 OR
+                confidence_score NOT BETWEEN 0.0 AND 1.0
+              )
+            """,
+            [scenario_id, run_id, feature_snapshot_version],
+        ).fetchone()[0]
+        if out_of_range > 0:
+            raise ValueError("Scoring outputs contain values outside [0, 1]")
+    elif open_slots > 0:
+        raise ValueError("Scoring stage produced no rows despite open slots being present")
     return output
