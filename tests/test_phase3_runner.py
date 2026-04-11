@@ -17,7 +17,7 @@ def _write_config(tmp_path: Path, *, run_id: str) -> Path:
         "run_id": run_id,
         "effective_ts": "2026-01-10T00:00:00Z",
         "action_ladder": [0, 5, 10, 15, 20],
-        "lead_time_windows_hours": [24, 72, 168],
+        "max_discount_lead_time_hours": 168,
         "global_discount_limits": {"min_pct": 0, "max_pct": 20},
         "time_of_day_buckets": {"boundaries_hours": [0, 12, 17, 24]},
         "underbooking": {

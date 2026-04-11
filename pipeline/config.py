@@ -62,7 +62,7 @@ class AppConfig(BaseModel):
     run_id: str | None = None
     effective_ts: datetime
     action_ladder: list[int]
-    lead_time_windows_hours: list[int]
+    max_discount_lead_time_hours: int = 168
     global_discount_limits: GlobalDiscountLimits
     scenario: ScenarioSettings
     time_of_day_buckets: TimeOfDayBuckets = Field(default_factory=TimeOfDayBuckets)
@@ -93,7 +93,7 @@ class AppConfig(BaseModel):
         base = (
             f"{self.scenario_id}|{self.source_run_id}|{self.random_seed}|"
             f"{self.effective_ts.isoformat()}|{self.action_ladder}|"
-            f"{self.lead_time_windows_hours}|{self.global_discount_limits.model_dump()}|"
+            f"{self.max_discount_lead_time_hours}|{self.global_discount_limits.model_dump()}|"
             f"{self.scenario.model_dump()}|{self.time_of_day_buckets.model_dump()}|"
             f"{self.underbooking.model_dump()}|{self.scoring.model_dump()}|"
             f"{self.optimizer.model_dump()}"
@@ -105,7 +105,8 @@ class AppConfig(BaseModel):
         return f"fsv_{ts}"
 
     def model_version(self) -> str:
-        return "model_v1_pooled_logistic"
+        contract = hashlib.sha256(self.scoring.model_dump_json().encode()).hexdigest()[:8]
+        return f"model_v2_pooled_logistic_{contract}"
 
 
 def load_config(path: str | Path = "config/default.yaml") -> AppConfig:

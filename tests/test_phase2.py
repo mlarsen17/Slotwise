@@ -214,7 +214,7 @@ def test_config_hash_changes_with_phase2_settings() -> None:
         "random_seed": 1,
         "effective_ts": "2026-01-01T00:00:00Z",
         "action_ladder": [0, 5, 10],
-        "lead_time_windows_hours": [24, 72],
+        "max_discount_lead_time_hours": 72,
         "global_discount_limits": {"min_pct": 0, "max_pct": 20},
         "scenario": {
             "business_count": 1,

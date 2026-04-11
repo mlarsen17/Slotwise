@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
+from datetime import datetime, timezone
 
 import duckdb
 
@@ -22,14 +23,14 @@ logging.basicConfig(
 )
 
 
-def _upsert_pipeline_run(
+def _insert_pipeline_run(
     conn: duckdb.DuckDBPyConnection,
     *,
     run_id: str,
     scenario_id: str,
     effective_ts,
     config_hash: str,
-    status: str,
+    started_at: datetime,
 ) -> None:
     conn.execute(
         "DELETE FROM pipeline_runs WHERE run_id = ? AND scenario_id = ?", [run_id, scenario_id]
@@ -37,9 +38,31 @@ def _upsert_pipeline_run(
     conn.execute(
         """
         INSERT INTO pipeline_runs (run_id, scenario_id, effective_ts, config_hash, started_at, status)
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, 'running')
         """,
-        [run_id, scenario_id, effective_ts, config_hash, effective_ts, status],
+        [run_id, scenario_id, effective_ts, config_hash, started_at],
+    )
+
+
+def _finalize_pipeline_run(
+    conn: duckdb.DuckDBPyConnection,
+    *,
+    run_id: str,
+    scenario_id: str,
+    status: str,
+    ended_at: datetime,
+    failure_message: str | None,
+) -> None:
+    conn.execute(
+        """
+        UPDATE pipeline_runs
+        SET status = ?,
+            ended_at = ?,
+            duration_ms = CAST((epoch_ms(?) - epoch_ms(started_at)) AS BIGINT),
+            failure_message = ?
+        WHERE run_id = ? AND scenario_id = ?
+        """,
+        [status, ended_at, ended_at, failure_message, run_id, scenario_id],
     )
 
 
@@ -50,6 +73,7 @@ def run(config_path: str = "config/default.yaml") -> None:
     effective_ts = cfg.effective_ts
     config_hash = cfg.config_hash()
     t0 = time.perf_counter()
+    run_started_at = datetime.now(timezone.utc)
     normalized = run_extract(cfg, run_id=run_id)
     logger.info(
         "stage=extract run_id=%s scenario_id=%s output_rows=%s elapsed_ms=%d",
@@ -60,13 +84,13 @@ def run(config_path: str = "config/default.yaml") -> None:
     )
     with connect(cfg.duckdb_path) as conn:
         bootstrap_db(conn)
-        _upsert_pipeline_run(
+        _insert_pipeline_run(
             conn,
             run_id=run_id,
             scenario_id=cfg.scenario_id,
             effective_ts=effective_ts,
             config_hash=config_hash,
-            status="running",
+            started_at=run_started_at,
         )
         feature_snapshot_version = cfg.feature_snapshot_version()
         try:
@@ -154,6 +178,8 @@ def run(config_path: str = "config/default.yaml") -> None:
                 feature_snapshot_version=feature_snapshot_version,
                 model_version=cfg.model_version(),
                 l2_c=cfg.scoring.l2_c,
+                effective_ts=effective_ts,
+                training_min_rows=cfg.scoring.training_min_rows,
             )
             logger.info(
                 "stage=scoring run_id=%s scenario_id=%s output_rows=%d elapsed_ms=%d",
@@ -172,7 +198,7 @@ def run(config_path: str = "config/default.yaml") -> None:
                 effective_ts=effective_ts,
                 random_seed=cfg.random_seed,
                 action_ladder=cfg.action_ladder,
-                lead_time_windows_hours=cfg.lead_time_windows_hours,
+                max_discount_lead_time_hours=cfg.max_discount_lead_time_hours,
                 max_discount_pct=cfg.global_discount_limits.max_pct,
                 excluded_services=cfg.optimizer.excluded_services,
                 price_floor_pct=cfg.optimizer.price_floor_pct,
@@ -188,13 +214,13 @@ def run(config_path: str = "config/default.yaml") -> None:
                 len(actions_output),
                 int((time.perf_counter() - t7) * 1000),
             )
-            _upsert_pipeline_run(
+            _finalize_pipeline_run(
                 conn,
                 run_id=run_id,
                 scenario_id=cfg.scenario_id,
-                effective_ts=effective_ts,
-                config_hash=config_hash,
                 status="success",
+                ended_at=datetime.now(timezone.utc),
+                failure_message=None,
             )
             summary = conn.execute(
                 """
@@ -218,14 +244,14 @@ def run(config_path: str = "config/default.yaml") -> None:
                 summary[3],
                 summary[4],
             )
-        except Exception:
-            _upsert_pipeline_run(
+        except Exception as exc:
+            _finalize_pipeline_run(
                 conn,
                 run_id=run_id,
                 scenario_id=cfg.scenario_id,
-                effective_ts=effective_ts,
-                config_hash=config_hash,
                 status="failed",
+                ended_at=datetime.now(timezone.utc),
+                failure_message=f"{type(exc).__name__}: {exc}",
             )
             raise
 

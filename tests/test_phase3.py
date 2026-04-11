@@ -108,6 +108,8 @@ def test_phase3_scoring_contract_and_calibration(tmp_path: Path) -> None:
             feature_snapshot_version="fsv_test",
             model_version="model_v1",
             l2_c=1.0,
+            effective_ts=datetime(2026, 1, 10, tzinfo=timezone.utc),
+            training_min_rows=2,
         )
         assert not output.empty
         expected_cols = {
@@ -136,6 +138,8 @@ def test_phase3_optimizer_rules_and_exploration_determinism(tmp_path: Path) -> N
             feature_snapshot_version="fsv_test",
             model_version="model_v1",
             l2_c=1.0,
+            effective_ts=datetime(2026, 1, 10, tzinfo=timezone.utc),
+            training_min_rows=2,
         )
 
         first = recommend_pricing_actions(
@@ -146,7 +150,7 @@ def test_phase3_optimizer_rules_and_exploration_determinism(tmp_path: Path) -> N
             effective_ts=datetime(2026, 1, 10, tzinfo=timezone.utc),
             random_seed=123,
             action_ladder=[0, 5, 10, 15, 20],
-            lead_time_windows_hours=[24, 72, 168],
+            max_discount_lead_time_hours=168,
             max_discount_pct=20,
             excluded_services=[],
             price_floor_pct=0.8,
@@ -163,7 +167,7 @@ def test_phase3_optimizer_rules_and_exploration_determinism(tmp_path: Path) -> N
             effective_ts=datetime(2026, 1, 10, tzinfo=timezone.utc),
             random_seed=123,
             action_ladder=[0, 5, 10, 15, 20],
-            lead_time_windows_hours=[24, 72, 168],
+            max_discount_lead_time_hours=168,
             max_discount_pct=20,
             excluded_services=[],
             price_floor_pct=0.8,
