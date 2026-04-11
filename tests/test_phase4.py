@@ -226,7 +226,9 @@ def test_phase4_recommendation_explorer_reconciles_exactly_with_duckdb(tmp_path:
     expected = _reference_recommendations(da, "phase4_ui_reconcile", "phase4_scenario")
 
     assert len(actual) == len(expected)
-    assert_frame_equal(actual.reset_index(drop=True), expected.reset_index(drop=True), check_dtype=False)
+    assert_frame_equal(
+        actual.reset_index(drop=True), expected.reset_index(drop=True), check_dtype=False
+    )
 
 
 def test_phase4_summary_views_reconcile_exactly_with_duckdb(tmp_path: Path) -> None:
@@ -291,7 +293,11 @@ def test_phase4_filter_aware_recommendation_queries(tmp_path: Path) -> None:
     config_path = _write_config(
         tmp_path,
         run_id="phase4_filtered",
-        scenario_overrides={"business_count": 2, "providers_per_business": 2, "services_per_business": 2},
+        scenario_overrides={
+            "business_count": 2,
+            "providers_per_business": 2,
+            "services_per_business": 2,
+        },
     )
     run(str(config_path))
 
@@ -358,13 +364,19 @@ def test_phase4_filter_aware_summary_counts(tmp_path: Path) -> None:
     config_path = _write_config(
         tmp_path,
         run_id="phase4_summary_filtered",
-        scenario_overrides={"business_count": 2, "providers_per_business": 2, "services_per_business": 2},
+        scenario_overrides={
+            "business_count": 2,
+            "providers_per_business": 2,
+            "services_per_business": 2,
+        },
     )
     run(str(config_path))
 
     da = AppDataAccess(tmp_path / "phase4.duckdb")
     all_summary = da.summary_counts("phase4_summary_filtered", "phase4_scenario")
-    provider = da.recommendations("phase4_summary_filtered", "phase4_scenario").iloc[0]["provider_id"]
+    provider = da.recommendations("phase4_summary_filtered", "phase4_scenario").iloc[0][
+        "provider_id"
+    ]
     provider_summary = da.summary_counts(
         "phase4_summary_filtered",
         "phase4_scenario",
@@ -373,9 +385,10 @@ def test_phase4_filter_aware_summary_counts(tmp_path: Path) -> None:
 
     assert provider_summary["by_provider"]["provider_id"].nunique() == 1
     assert provider_summary["by_provider"]["provider_id"].iloc[0] == provider
-    assert provider_summary["by_action"]["recommendation_count"].sum() < all_summary["by_action"][
-        "recommendation_count"
-    ].sum()
+    assert (
+        provider_summary["by_action"]["recommendation_count"].sum()
+        < all_summary["by_action"]["recommendation_count"].sum()
+    )
 
 
 def test_phase4_recommendation_sorting_helper() -> None:
@@ -390,5 +403,7 @@ def test_phase4_recommendation_sorting_helper() -> None:
     by_severity_desc = sort_recommendations(frame, sort_field="severity_score", sort_desc=True)
     assert by_severity_desc["slot_id"].tolist() == ["s3", "s2", "s1"]
 
-    by_discount_asc = sort_recommendations(frame, sort_field="recommended_discount", sort_desc=False)
+    by_discount_asc = sort_recommendations(
+        frame, sort_field="recommended_discount", sort_desc=False
+    )
     assert by_discount_asc["slot_id"].tolist() == ["s2", "s1", "s3"]
