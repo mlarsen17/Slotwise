@@ -3,6 +3,7 @@ from __future__ import annotations
 import streamlit as st
 
 from app.data_access import AppDataAccess
+from app.recommendation_view import sort_recommendations
 
 st.set_page_config(page_title="Slotwise Analytics", layout="wide")
 st.title("Slotwise — Recommendation Explorer")
@@ -34,25 +35,30 @@ service = st.sidebar.selectbox("Service", services)
 lead_band = st.sidebar.selectbox("Lead-time band", bands)
 discounted_only = st.sidebar.checkbox("Discounted only", False)
 exploration_only = st.sidebar.checkbox("Exploration only", False)
+sort_field = st.sidebar.selectbox(
+    "Sort field",
+    ["severity_score", "recommended_discount"],
+    index=0,
+)
+sort_direction = st.sidebar.radio("Sort direction", ["Descending", "Ascending"], index=0)
+sort_desc = sort_direction == "Descending"
 
-filtered = recs.copy()
-if biz != "All":
-    filtered = filtered[filtered["business_id"] == biz]
-if provider != "All":
-    filtered = filtered[filtered["provider_id"] == provider]
-if service != "All":
-    filtered = filtered[filtered["service_id"] == service]
-if lead_band != "All":
-    filtered = filtered[filtered["effective_lead_time_band"] == lead_band]
-if discounted_only:
-    filtered = filtered[filtered["recommended_discount"] > 0]
-if exploration_only:
-    filtered = filtered[filtered["was_exploration"]]
+filtered = da.recommendations(
+    selected_run_id,
+    selected_scenario_id,
+    business_id=None if biz == "All" else biz,
+    provider_id=None if provider == "All" else provider,
+    service_id=None if service == "All" else service,
+    lead_time_band=None if lead_band == "All" else lead_band,
+    discounted_only=discounted_only,
+    exploration_only=exploration_only,
+    sort_field=sort_field,
+    sort_desc=sort_desc,
+)
+filtered = sort_recommendations(filtered, sort_field=sort_field, sort_desc=sort_desc)
 
 st.subheader("Slot-level recommendations")
-st.dataframe(
-    filtered.sort_values(["severity_score", "recommended_discount"], ascending=[False, False])
-)
+st.dataframe(filtered)
 
 left, right = st.columns(2)
 with left:
@@ -70,7 +76,16 @@ else:
     st.bar_chart(severity_distribution.set_index("severity_band")["slot_count"])
 
 st.subheader("Recommendation summaries")
-summary = da.summary_counts(selected_run_id, selected_scenario_id)
+summary = da.summary_counts(
+    selected_run_id,
+    selected_scenario_id,
+    business_id=None if biz == "All" else biz,
+    provider_id=None if provider == "All" else provider,
+    service_id=None if service == "All" else service,
+    lead_time_band=None if lead_band == "All" else lead_band,
+    discounted_only=discounted_only,
+    exploration_only=exploration_only,
+)
 sum_left, sum_mid, sum_right = st.columns(3)
 with sum_left:
     st.caption("By action bucket")

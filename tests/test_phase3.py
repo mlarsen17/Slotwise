@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
+from optimizer.rationale import generate_rationale_codes
 from pipeline.db import bootstrap_db, connect
 from pipeline.stages.baseline_stage import compute_cohort_baselines
 from pipeline.stages.feature_stage import materialize_feature_snapshot
@@ -192,3 +193,75 @@ def test_phase3_optimizer_rules_and_exploration_determinism(tmp_path: Path) -> N
             """
         ).fetchone()[0]
         assert dupes == 0
+
+
+def test_phase3_rationale_never_marks_discounted_or_underbooked_as_healthy() -> None:
+    discounted_codes = generate_rationale_codes(
+        underbooked=False,
+        hours_until_slot=72,
+        provider_utilization_7d=0.9,
+        day_of_week="sat",
+        time_of_day_bucket="morning",
+        pace_deviation=0.05,
+        chosen_discount=10,
+    )
+    underbooked_codes = generate_rationale_codes(
+        underbooked=True,
+        hours_until_slot=72,
+        provider_utilization_7d=0.9,
+        day_of_week="sat",
+        time_of_day_bucket="morning",
+        pace_deviation=0.05,
+        chosen_discount=0,
+    )
+
+    assert "healthy_slot_no_discount" not in discounted_codes
+    assert "healthy_slot_no_discount" not in underbooked_codes
+
+
+def test_phase3_rationale_codes_are_evidence_backed_and_deterministic() -> None:
+    kwargs = {
+        "underbooked": True,
+        "hours_until_slot": 12,
+        "provider_utilization_7d": 0.2,
+        "day_of_week": "tue",
+        "time_of_day_bucket": "afternoon",
+        "pace_deviation": -0.3,
+        "chosen_discount": 15,
+    }
+    first = generate_rationale_codes(**kwargs)
+    second = generate_rationale_codes(**kwargs)
+
+    assert first == second
+    assert first == [
+        "booking_pace_below_baseline",
+        "historically_underbooked_weekday_afternoon",
+        "provider_utilization_below_target",
+        "short_lead_time_low_fill",
+    ]
+
+
+def test_phase3_rationale_no_contradictory_combinations_and_no_duplicates() -> None:
+    codes = generate_rationale_codes(
+        underbooked=False,
+        hours_until_slot=100,
+        provider_utilization_7d=0.8,
+        day_of_week="sun",
+        time_of_day_bucket="evening",
+        pace_deviation=0.2,
+        chosen_discount=0,
+    )
+    assert codes == ["healthy_slot_no_discount"]
+    assert len(codes) == len(set(codes))
+
+    underbooked_codes = generate_rationale_codes(
+        underbooked=True,
+        hours_until_slot=100,
+        provider_utilization_7d=0.8,
+        day_of_week="sun",
+        time_of_day_bucket="evening",
+        pace_deviation=0.2,
+        chosen_discount=0,
+    )
+    assert "healthy_slot_no_discount" not in underbooked_codes
+    assert "underbooked_slot_flagged" in underbooked_codes
