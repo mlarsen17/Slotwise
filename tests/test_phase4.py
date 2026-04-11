@@ -191,6 +191,10 @@ def test_phase4_data_access_recommendations_and_evaluation_are_reasonable(tmp_pa
         "rationale_coverage",
         "eligible_discount_compliance_rate",
         "discount_shortfall_correlation",
+        "low_demand_flag_rate",
+        "healthy_overflag_rate",
+        "eligible_underbooked_discount_rate",
+        "similar_slot_action_consistency",
     }
     assert expected_metrics.issubset(metrics)
     non_negative_metrics = evaluation[evaluation["metric_name"] != "discount_shortfall_correlation"]

@@ -142,13 +142,51 @@ def score_slots(
         conn.execute(
             """
             INSERT INTO business_calibrations (
-              run_id, scenario_id, feature_snapshot_version, business_id, calibration_factor, model_version
+              run_id, scenario_id, feature_snapshot_version, business_id, calibration_factor,
+              training_row_count, positive_label_rate, used_fallback, label_definition,
+              feature_contract_hash, model_version
             )
-            SELECT ?, ?, ?, business_id, calibration_factor, ?
+            SELECT ?, ?, ?, business_id, calibration_factor, ?, ?, ?, ?, ?, ?
             FROM tmp_calibration
             """,
-            [run_id, scenario_id, feature_snapshot_version, model_version],
+            [
+                run_id,
+                scenario_id,
+                feature_snapshot_version,
+                int(training_row_count),
+                float(positive_label_rate),
+                bool(bundle.used_fallback),
+                label_definition,
+                feature_contract_hash(),
+                model_version,
+            ],
         )
+        calibration_duplicates = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM (
+              SELECT business_id
+              FROM business_calibrations
+              WHERE scenario_id = ? AND run_id = ? AND feature_snapshot_version = ?
+              GROUP BY business_id
+              HAVING COUNT(*) > 1
+            )
+            """,
+            [scenario_id, run_id, feature_snapshot_version],
+        ).fetchone()[0]
+        if calibration_duplicates > 0:
+            raise ValueError("Duplicate business_calibrations rows detected for business_id")
+        out_of_bounds_factor = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM business_calibrations
+            WHERE scenario_id = ? AND run_id = ? AND feature_snapshot_version = ?
+              AND calibration_factor NOT BETWEEN 0.1 AND 2.0
+            """,
+            [scenario_id, run_id, feature_snapshot_version],
+        ).fetchone()[0]
+        if out_of_bounds_factor > 0:
+            raise ValueError("business_calibrations contain out-of-bounds calibration_factor")
 
         scoring = scoring.merge(
             calibration[["business_id", "calibration_factor"]], on="business_id", how="left"

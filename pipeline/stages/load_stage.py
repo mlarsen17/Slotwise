@@ -122,17 +122,6 @@ def load_core_tables(
             )
 
         conn.execute(
-            "DELETE FROM pipeline_runs WHERE run_id = ? AND scenario_id = ?", [run_id, scenario_id]
-        )
-        conn.execute(
-            """
-            INSERT INTO pipeline_runs (run_id, scenario_id, effective_ts, config_hash, started_at, status)
-            VALUES (?, ?, ?, ?, ?, 'running')
-            """,
-            [run_id, scenario_id, effective_ts, config_hash, effective_ts],
-        )
-
-        conn.execute(
             "INSERT INTO businesses SELECT business_id, source_business_id, name, scenario_id FROM tmp_businesses"
         )
         conn.execute(
@@ -203,10 +192,6 @@ def load_core_tables(
             FROM tmp_events
             """,
             [effective_ts],
-        )
-        conn.execute(
-            "UPDATE pipeline_runs SET status='success' WHERE run_id = ? AND scenario_id = ?",
-            [run_id, scenario_id],
         )
         conn.execute("COMMIT")
     except Exception:

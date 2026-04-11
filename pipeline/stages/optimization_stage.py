@@ -209,6 +209,50 @@ def recommend_pricing_actions(
         if int(invalid_actions) > 0:
             raise ValueError("Final action is not in eligible_action_set or action_ladder")
 
+        joined = output.merge(
+            df[
+                [
+                    "slot_id",
+                    "service_id",
+                    "standard_price",
+                    "underbooked",
+                    "shortfall_score",
+                ]
+            ],
+            on="slot_id",
+            how="left",
+        )
+        if healthy_zero_only:
+            healthy_non_exploratory = joined[
+                (~joined["underbooked"].fillna(False).astype(bool))
+                & (~joined["was_exploration"].astype(bool))
+            ]
+            if (
+                not healthy_non_exploratory.empty
+                and (healthy_non_exploratory["action_value"] != 0).any()
+            ):
+                raise ValueError(
+                    "healthy_zero_only policy violated: healthy slot received non-zero discount"
+                )
+        if excluded_services:
+            excluded = joined[joined["service_id"].isin(set(excluded_services))]
+            if not excluded.empty and (excluded["action_value"] > 0).any():
+                raise ValueError(
+                    "Excluded service policy violated: excluded service received discount"
+                )
+        implied_price = joined["standard_price"] * (1.0 - joined["action_value"] / 100.0)
+        floor_price = joined["standard_price"] * floor_multiplier
+        if (implied_price < (floor_price - 1e-9)).any():
+            raise ValueError("Price-floor policy violated in pricing_actions output")
+        discounted = joined[joined["action_value"] > 0].copy()
+        if len(discounted) > 1:
+            discounted["severity_proxy"] = discounted["shortfall_score"].fillna(0.0)
+            corr = discounted["severity_proxy"].corr(discounted["action_value"])
+            if pd.notna(corr) and corr < -0.25:
+                raise ValueError(
+                    "Recommendation policy drift: discounts anti-correlate with severity"
+                )
+
     conn.execute(
         "DELETE FROM pricing_actions WHERE scenario_id = ? AND run_id = ?", [scenario_id, run_id]
     )
