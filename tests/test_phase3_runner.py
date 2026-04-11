@@ -93,3 +93,64 @@ def test_runner_failure_persists_failed_status(tmp_path: Path, monkeypatch) -> N
             "SELECT status FROM pipeline_runs WHERE run_id = 'run_fail' AND scenario_id = 'phase3_runner_scenario'"
         ).fetchone()[0]
         assert status == "failed"
+
+
+def test_runner_failure_does_not_persist_partial_pricing_actions(
+    tmp_path: Path, monkeypatch
+) -> None:
+    from pipeline import run_pipeline
+
+    config_path = _write_config(tmp_path, run_id="run_fail_partial")
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("forced optimization failure")
+
+    monkeypatch.setattr(run_pipeline, "recommend_pricing_actions", _boom)
+
+    try:
+        run(str(config_path))
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("Expected forced optimization failure")
+
+    with connect(tmp_path / "runner.duckdb") as conn:
+        action_count = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM pricing_actions
+            WHERE run_id = 'run_fail_partial' AND scenario_id = 'phase3_runner_scenario'
+            """
+        ).fetchone()[0]
+        assert action_count == 0
+
+
+def test_runner_idempotent_rerun_keeps_stable_pricing_actions(tmp_path: Path) -> None:
+    config_path = _write_config(tmp_path, run_id="run_idempotent")
+    run(str(config_path))
+    run(str(config_path))
+
+    with connect(tmp_path / "runner.duckdb") as conn:
+        duplicate_slots = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM (
+                SELECT slot_id
+                FROM pricing_actions
+                WHERE run_id = 'run_idempotent' AND scenario_id = 'phase3_runner_scenario'
+                GROUP BY slot_id
+                HAVING COUNT(*) > 1
+            )
+            """
+        ).fetchone()[0]
+        assert duplicate_slots == 0
+
+        action_rows = conn.execute(
+            """
+            SELECT slot_id, action_value, was_exploration
+            FROM pricing_actions
+            WHERE run_id = 'run_idempotent' AND scenario_id = 'phase3_runner_scenario'
+            ORDER BY slot_id
+            """
+        ).fetchall()
+        assert len(action_rows) > 0
