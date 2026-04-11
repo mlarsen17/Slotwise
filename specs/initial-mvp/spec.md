@@ -916,8 +916,8 @@ Tighten Phase 2 so the feature layer is trustworthy for downstream scoring and o
 * [x] Validate rationale quality
 
   * [x] Confirm every discounted slot has at least one rationale code
-  * [ ] Confirm codes match actual slot context
-  * [ ] Eliminate redundant or contradictory codes
+  * [x] Confirm codes match actual slot context
+  * [x] Eliminate redundant or contradictory codes
 
 ### Feature 3.7 — Exploration policy and logging
 
@@ -1629,14 +1629,14 @@ This phase is a quality and trustworthiness phase. It does not expand the produc
   * [x] Show exploration flag
 * [x] Add filtering and sorting
 
-  * [ ] Sort by severity
-  * [ ] Sort by discount
+  * [x] Sort by severity
+  * [x] Sort by discount
   * [x] Filter discounted-only slots
   * [x] Filter exploratory recommendations
 * [x] Validate explorer usefulness
 
-  * [ ] Confirm rows match `pricing_actions`
-  * [ ] Confirm all key fields render correctly
+  * [x] Confirm rows match `pricing_actions`
+  * [x] Confirm all key fields render correctly
 
 ### Feature 4.5 — Cohort diagnostics and recommendation summaries
 
@@ -1658,8 +1658,8 @@ This phase is a quality and trustworthiness phase. It does not expand the produc
   * [ ] Compare flag rates
 * [x] Validate summary accuracy
 
-  * [ ] Reconcile counts with DuckDB queries
-  * [ ] Ensure filters affect summaries correctly
+  * [x] Reconcile counts with DuckDB queries
+  * [x] Ensure filters affect summaries correctly
 
 ### Feature 4.6 — Evaluation suite
 
@@ -1863,16 +1863,16 @@ This phase does not expand MVP scope. It makes Phase 4 executable, testable, and
   * [x] Severity score distribution
 * [ ] Improve recommendation explorer fidelity
 
-  * [ ] Confirm displayed rows reconcile exactly with `pricing_actions`
+  * [x] Confirm displayed rows reconcile exactly with `pricing_actions`
   * [ ] Confirm implied price calculation is correct
   * [ ] Confirm rationale rendering handles JSON safely
   * [ ] Confirm filters apply correctly to slot-level results
 * [x] Improve summary view accuracy
 
-  * [ ] Confirm counts by action bucket reconcile with DuckDB
-  * [ ] Confirm counts by provider reconcile with DuckDB
-  * [ ] Confirm counts by service reconcile with DuckDB
-  * [ ] Confirm counts by lead-time band reconcile with DuckDB
+  * [x] Confirm counts by action bucket reconcile with DuckDB
+  * [x] Confirm counts by provider reconcile with DuckDB
+  * [x] Confirm counts by service reconcile with DuckDB
+  * [x] Confirm counts by lead-time band reconcile with DuckDB
 * [ ] Document how to run the UI
 
   * [ ] Add Streamlit launch command
@@ -1927,7 +1927,7 @@ This phase does not expand MVP scope. It makes Phase 4 executable, testable, and
 * [x] Add UI data-layer tests if the app has a separate query layer
 
   * [ ] latest run lookup works
-  * [ ] filters generate expected query outputs
+  * [x] filters generate expected query outputs
   * [ ] empty-state handling is correct
 * [ ] Add full Phase 4 end-to-end test
 
