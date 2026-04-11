@@ -152,6 +152,29 @@ def test_phase4_data_access_recommendations_and_evaluation_are_reasonable(tmp_pa
         "discounted_action_rate",
         "healthy_zero_rate",
         "rationale_coverage",
+        "eligible_discount_compliance_rate",
+        "discount_shortfall_correlation",
     }
     assert expected_metrics.issubset(metrics)
-    assert (evaluation["metric_value"] >= 0).all()
+    non_negative_metrics = evaluation[evaluation["metric_name"] != "discount_shortfall_correlation"]
+    assert (non_negative_metrics["metric_value"] >= 0).all()
+
+
+def test_phase4_data_access_summary_and_distribution_queries(tmp_path: Path) -> None:
+    config_path = _write_config(tmp_path, run_id="phase4_ui_summary")
+    run(str(config_path))
+
+    da = AppDataAccess(tmp_path / "phase4.duckdb")
+    severity_distribution = da.severity_distribution("phase4_ui_summary", "phase4_scenario")
+    summary = da.summary_counts("phase4_ui_summary", "phase4_scenario")
+
+    assert not severity_distribution.empty
+    assert set(["severity_band", "slot_count"]).issubset(severity_distribution.columns)
+    assert set(summary.keys()) == {
+        "by_action",
+        "by_provider",
+        "by_service",
+        "by_lead_time_band",
+    }
+    for frame in summary.values():
+        assert not frame.empty

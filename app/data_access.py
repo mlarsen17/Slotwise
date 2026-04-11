@@ -52,3 +52,81 @@ class AppDataAccess:
                 "SELECT metric_name, metric_value FROM evaluation_results WHERE run_id = ? AND scenario_id = ?",
                 [run_id, scenario_id],
             ).fetchdf()
+
+    def severity_distribution(self, run_id: str, scenario_id: str) -> pd.DataFrame:
+        with self._conn() as conn:
+            return conn.execute(
+                """
+                SELECT
+                  CASE
+                    WHEN severity_score < 0.25 THEN '0.00-0.24'
+                    WHEN severity_score < 0.50 THEN '0.25-0.49'
+                    WHEN severity_score < 0.75 THEN '0.50-0.74'
+                    ELSE '0.75-1.00'
+                  END AS severity_band,
+                  COUNT(*) AS slot_count
+                FROM underbooking_outputs
+                WHERE run_id = ? AND scenario_id = ?
+                GROUP BY 1
+                ORDER BY 1
+                """,
+                [run_id, scenario_id],
+            ).fetchdf()
+
+    def summary_counts(self, run_id: str, scenario_id: str) -> dict[str, pd.DataFrame]:
+        with self._conn() as conn:
+            by_action = conn.execute(
+                """
+                SELECT action_value AS action_bucket, COUNT(*) AS recommendation_count
+                FROM pricing_actions
+                WHERE run_id = ? AND scenario_id = ?
+                GROUP BY 1
+                ORDER BY 1
+                """,
+                [run_id, scenario_id],
+            ).fetchdf()
+            by_provider = conn.execute(
+                """
+                SELECT s.provider_id, COUNT(*) AS recommendation_count
+                FROM pricing_actions p
+                JOIN slots s
+                  ON s.slot_id = p.slot_id AND s.run_id = p.run_id AND s.scenario_id = p.scenario_id
+                WHERE p.run_id = ? AND p.scenario_id = ?
+                GROUP BY 1
+                ORDER BY recommendation_count DESC
+                """,
+                [run_id, scenario_id],
+            ).fetchdf()
+            by_service = conn.execute(
+                """
+                SELECT s.service_id, COUNT(*) AS recommendation_count
+                FROM pricing_actions p
+                JOIN slots s
+                  ON s.slot_id = p.slot_id AND s.run_id = p.run_id AND s.scenario_id = p.scenario_id
+                WHERE p.run_id = ? AND p.scenario_id = ?
+                GROUP BY 1
+                ORDER BY recommendation_count DESC
+                """,
+                [run_id, scenario_id],
+            ).fetchdf()
+            by_lead_time = conn.execute(
+                """
+                SELECT f.effective_lead_time_band, COUNT(*) AS recommendation_count
+                FROM pricing_actions p
+                JOIN feature_snapshots f
+                  ON f.slot_id = p.slot_id
+                 AND f.run_id = p.run_id
+                 AND f.scenario_id = p.scenario_id
+                 AND f.feature_snapshot_version = p.feature_snapshot_version
+                WHERE p.run_id = ? AND p.scenario_id = ?
+                GROUP BY 1
+                ORDER BY 1
+                """,
+                [run_id, scenario_id],
+            ).fetchdf()
+            return {
+                "by_action": by_action,
+                "by_provider": by_provider,
+                "by_service": by_service,
+                "by_lead_time_band": by_lead_time,
+            }

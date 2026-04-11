@@ -62,5 +62,27 @@ with right:
     st.subheader("By provider")
     st.bar_chart(filtered.groupby("provider_id").size())
 
+st.subheader("Severity score distribution")
+severity_distribution = da.severity_distribution(selected_run_id, selected_scenario_id)
+if severity_distribution.empty:
+    st.info("No severity rows available for selected run.")
+else:
+    st.bar_chart(severity_distribution.set_index("severity_band")["slot_count"])
+
+st.subheader("Recommendation summaries")
+summary = da.summary_counts(selected_run_id, selected_scenario_id)
+sum_left, sum_mid, sum_right = st.columns(3)
+with sum_left:
+    st.caption("By action bucket")
+    st.dataframe(summary["by_action"], use_container_width=True)
+with sum_mid:
+    st.caption("By provider")
+    st.dataframe(summary["by_provider"], use_container_width=True)
+with sum_right:
+    st.caption("By service")
+    st.dataframe(summary["by_service"], use_container_width=True)
+st.caption("By lead-time band")
+st.dataframe(summary["by_lead_time_band"], use_container_width=True)
+
 st.subheader("Evaluation metrics")
 st.dataframe(da.evaluation(selected_run_id, selected_scenario_id))
