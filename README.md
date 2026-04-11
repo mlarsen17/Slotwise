@@ -2,7 +2,7 @@
 
 Slotwise is a simulation-first MVP for a demand-aware pricing engine focused on underbooked appointment slots.
 
-The current codebase implements the full core pipeline through Phase 3 scoring and recommendations:
+The current codebase now includes Phase 4 pipeline execution, evaluation metrics, and a Streamlit analytics surface:
 
 - deterministic synthetic extraction via the Medscheduler wrapper
 - normalization into stable IDs and canonical entities
@@ -20,8 +20,9 @@ The current codebase implements the full core pipeline through Phase 3 scoring a
 - deterministic exploration override and rationale code generation
 - idempotent persistence of `scoring_outputs`, `business_calibrations`, and `pricing_actions`
 - runner-level `pipeline_runs` auditability (`started_at`, `ended_at`, `duration_ms`, failure metadata)
-
-> Scope note: this repository now includes operational Phase 3 outputs (`scoring_outputs`, `business_calibrations`, `pricing_actions`). The Streamlit UI remains scaffolded.
+- stage-selective pipeline runner modes (`--stage`, `--from-stage`)
+- persisted `run_metadata` + `evaluation_results` artifacts
+- Streamlit recommendation explorer and summary diagnostics
 
 ## Repository layout
 
@@ -30,7 +31,7 @@ medscheduler_wrapper/   # synthetic source generation + normalization
 pipeline/               # config, DB bootstrap, stages, runner
 models/                 # scoring + calibration model logic
 optimizer/              # eligibility, recommendation, rationale, exploration logic
-app/                    # placeholder for Streamlit UI
+app/                    # Streamlit analytics UI + DuckDB data access
 config/default.yaml     # default local run configuration
 tests/                  # phase-1 and availability behavior tests
 ```
@@ -53,7 +54,7 @@ pip install -e .[dev]
 Default config:
 
 ```bash
-python -m pipeline.run_pipeline
+python -m pipeline.run_pipeline --config config/default.yaml
 ```
 
 With an explicit config path:
@@ -108,3 +109,12 @@ black --check .
 - Dimension tables (`businesses`, `providers`, `services`, `locations`, `customers`) are replaced per `scenario_id`.
 - Fact-like tables (`slots`, `booking_events`) are replaced per `scenario_id` + `run_id`.
 - Re-running the same configuration should produce stable identifiers and deterministic slot state.
+
+
+## Run Streamlit UI
+
+```bash
+streamlit run app/streamlit_app.py
+```
+
+The UI reads precomputed tables only (`pricing_actions`, `underbooking_outputs`, `feature_snapshots`, `evaluation_results`) and supports run/scenario + business/provider/service/lead-time filters.
